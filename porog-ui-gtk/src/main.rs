@@ -6,6 +6,7 @@
 mod changelog;
 mod menu;
 mod search;
+mod welcome;
 mod window;
 
 use adw::prelude::*;

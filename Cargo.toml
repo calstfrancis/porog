@@ -12,7 +12,5 @@ repository = "https://github.com/calstfrancis/porog"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
-# The status-file schema shared with the Fond apps. A sibling checkout for now: fond-status
-# is not on GitHub yet. Switch to `git = ".../fond-core", rev = "..."` once it is pushed,
-# because the flatpak and CI builds cannot see a sibling directory.
-fond-status = { path = "../fond-core/crates/fond-status" }
+# The status-file schema shared with the Fond apps, from fond-core.
+fond-status = { git = "https://github.com/calstfrancis/fond-core", rev = "28d95c1491bdda6e708c04ce2768f89374e62338" }

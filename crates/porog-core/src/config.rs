@@ -34,6 +34,8 @@ pub struct Config {
     pub theme: Theme,
     /// Whether each row lists its last three resume entries instead of one.
     pub details: bool,
+    /// The version whose Welcome / What's New window was last shown; empty on a first run.
+    pub last_seen_version: String,
 }
 
 impl Config {
@@ -78,6 +80,7 @@ mod tests {
         let config = Config {
             theme: Theme::Dark,
             details: true,
+            last_seen_version: "0.1.0".into(),
         };
         config.save(&path).unwrap();
         assert_eq!(Config::load(&path), config);

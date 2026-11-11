@@ -13,7 +13,7 @@ use porog_core::now::{self, NowView};
 use porog_core::status::{self, ResumeEntry, RowState};
 use porog_core::{App, APPS};
 
-use crate::{changelog, menu, search, VERSION};
+use crate::{changelog, menu, search, welcome, VERSION};
 
 /// The parts of an app's row that change after it is built.
 #[derive(Clone)]
@@ -475,7 +475,12 @@ pub fn build(app: &adw::Application) {
         .default_height(470)
         .content(&view)
         .build();
-    menu_button.set_popover(Some(&menu::build(&window, &toasts, config, config_path)));
+    menu_button.set_popover(Some(&menu::build(
+        &window,
+        &toasts,
+        config.clone(),
+        config_path.clone(),
+    )));
 
     // One action does what a row's button says, by row index: the buttons, Enter on a row
     // and Alt+1…5 all go through it, so they cannot behave differently.
@@ -513,6 +518,12 @@ pub fn build(app: &adw::Application) {
     });
     window.add_action(&search);
     app.set_accels_for_action("win.search", &["<Control>k"]);
+    let whats_new = gio::SimpleAction::new("whats-new", None);
+    whats_new.connect_activate({
+        let window = window.clone();
+        move |_, _| welcome::show(&window, false)
+    });
+    window.add_action(&whats_new);
     let show_about = gio::SimpleAction::new("about", None);
     show_about.connect_activate({
         let window = window.clone();
@@ -532,4 +543,5 @@ pub fn build(app: &adw::Application) {
         GtkWindowExt::set_focus(&window, Some(&first));
     }
     window.present();
+    welcome::maybe_show(&window, &config, &config_path, &toasts);
 }

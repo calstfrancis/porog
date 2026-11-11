@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.0] "Open Door" — 2026-11-11 — The way back into the Fond suite
 
 ### Added
 - **Resume.** Each row reads the app's status file (`~/.local/share/fond/status/<app>.json`) and
@@ -23,9 +23,6 @@
 - Alt+1 to Alt+5 and Enter do what the row's button says. Clicking the app's name always opens
   the app plainly.
 
-## [0.1.0-dev1] — the fixed board
-
-### Added
 - One window with a fixed row for each Fond app, in the order the work runs: Sputnik,
   Pereplyot, Kartoteka, Zerkalo, Skrizhal. Each row opens its app, or says "Not installed".
 - Keyboard: Up and Down move between rows, Enter opens the focused row's app, and Alt+1 to
@@ -34,3 +31,4 @@
 - The version number at the bottom right opens this changelog.
 - Rows are re-checked when the window gains focus, never while it is being looked at.
 - Flatpak packaging and CI workflows. Not built or published yet.
+- A Welcome window on the first run and What's New after an update, also under the menu.

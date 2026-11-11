@@ -19,6 +19,9 @@
       installed.</li>
       <li>Fully usable from the keyboard: arrow keys and Enter, or Alt+1 to Alt+5.</li>
       <li>Nothing on screen changes while you are looking at it.</li>
+      <li>Resume: what you were last doing in each app, with a button that reopens it.</li>
+      <li>Today: Sputnik's Now card at the top, in Sputnik's own words.</li>
+      <li>Ctrl+K searches your Kartoteka library.</li>
       <li>System, Light and Dark themes.</li>
     </ul>
   </description>
@@ -34,5 +37,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.1.0" date="2026-11-11">
+      <description>
+        <p>0.1.0 "Open Door" — the first release. One window with a fixed row for each Fond app,
+        what you were last doing in each with a Resume button, Sputnik's Now card, and Ctrl+K
+        search of your Kartoteka library.</p>
+      </description>
+    </release>
   </releases>
 </component>

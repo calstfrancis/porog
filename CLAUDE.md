@@ -37,14 +37,15 @@ CI-published flatpak, same shape as Pereplyot's (`release-flatpak.yml`,
 `publish-flatpak-local.sh`, `RELEASE-CI-SETUP.md`). Whenever `Cargo.lock` changes,
 regenerate `packaging/cargo-sources.json` per the root `CLAUDE.md`. The manifest grants only
 `--filesystem=xdg-data/fond:create` (no home access; the host is asked whether a resume path
-exists). `fond-status` is a path dependency (`../fond-core/crates/fond-status`) until fond-core is
-pushed; switch it to a git `rev` and regenerate `cargo-sources.json` before any flatpak build.
+exists). 
+## Release machinery
 
-## Not set up yet
-
-No GitHub remote and no CI secrets, so no flatpak has been built: "prep dev build" can
-commit and tag, but `./dev-build.sh` fails until Cal creates `calstfrancis/porog`. No
-Welcome / What's New window, `capture-screenshots.sh` or `release-preflight.sh` yet.
+`RELEASE_NAME` is in `porog-ui-gtk/src/welcome.rs` beside the What's New list (`NEW`): bump both
+at release, with the CHANGELOG heading and the metainfo entry. `./release-preflight.sh` cross-checks
+all of it. `./capture-screenshots.sh` refreshes `screenshots/` from fictional status files and a fake
+`flatpak` (needs `cargo build --release`). `POROG_NO_WELCOME=1` hides the Welcome window.
+`fond-status` is a git dependency on `fond-core` (one rev, shared with every app that links `fond-core`
+crates: a second rev breaks the offline flatpak build's single cargo source entry).
 
 ## Testing the window headlessly
 

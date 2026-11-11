@@ -116,9 +116,14 @@ pub fn build(
     }
     rows.append(&popover_separator());
 
+    let whats_new = popover_button("What's New");
     let changelog = popover_button("Changelog");
     let about = popover_button("About Porog");
-    for (row, action) in [(&changelog, "changelog"), (&about, "about")] {
+    for (row, action) in [
+        (&whats_new, "whats-new"),
+        (&changelog, "changelog"),
+        (&about, "about"),
+    ] {
         let popover = popover.clone();
         let window = window.clone();
         row.connect_clicked(move |_| {

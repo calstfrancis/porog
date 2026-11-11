@@ -85,9 +85,8 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
                 return;
             }
             line.set_label("Searching…");
-            let id = glib::timeout_add_local_once(
-                std::time::Duration::from_millis(PAUSE_MS.into()),
-                {
+            let id =
+                glib::timeout_add_local_once(std::time::Duration::from_millis(PAUSE_MS.into()), {
                     let list = list.clone();
                     let line = line.clone();
                     let latest = latest.clone();
@@ -103,8 +102,7 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
                             }
                         });
                     }
-                },
-            );
+                });
             pending.set(Some(id));
         }
     });
@@ -113,7 +111,9 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
         let window = window.clone();
         let toasts = toasts.clone();
         move |row: &gtk::ListBoxRow| {
-            let Some(target) = row_target(row) else { return };
+            let Some(target) = row_target(row) else {
+                return;
+            };
             launch(target.0, target.1, &toasts);
             window.close();
         }
