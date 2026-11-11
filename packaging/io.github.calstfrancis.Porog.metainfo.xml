@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.calstfrancis.Porog</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-Proprietary</project_license>
+
+  <name>Porog</name>
+  <summary>The way back into the Fond suite</summary>
+
+  <description>
+    <p>
+      Porog (порог — Russian for "threshold") is one quiet window for the Fond suite:
+      Sputnik, Pereplyot, Kartoteka, Zerkalo and Skrizhal. Each app has a row that is
+      always in the same place, and opens from there.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>A fixed row for each Fond app, which says plainly when an app is not
+      installed.</li>
+      <li>Fully usable from the keyboard: arrow keys and Enter, or Alt+1 to Alt+5.</li>
+      <li>Nothing on screen changes while you are looking at it.</li>
+      <li>System, Light and Dark themes.</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.calstfrancis.Porog.desktop</launchable>
+
+  <url type="homepage">https://github.com/calstfrancis/porog</url>
+
+  <developer id="io.github.calstfrancis">
+    <name>Cal St Francis</name>
+  </developer>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+  </releases>
+</component>

@@ -1,0 +1,15 @@
+[package]
+name = "porog-core"
+version = "0.1.0"
+description = "Porog's GTK-free core: the Fond app registry and how each app is launched"
+license = "LicenseRef-Proprietary"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+fond-status = { workspace = true }

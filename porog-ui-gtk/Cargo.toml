@@ -1,0 +1,18 @@
+[package]
+name = "porog-ui-gtk"
+version = "0.1.0-dev1"
+description = "Porog — the way back into the Fond suite (proprietary)"
+license = "LicenseRef-Proprietary"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "porog"
+path = "src/main.rs"
+
+[dependencies]
+porog-core = { path = "../crates/porog-core" }
+gtk4 = { version = "0.11", features = ["v4_10"] }
+libadwaita = { version = "0.9", features = ["v1_4"] }

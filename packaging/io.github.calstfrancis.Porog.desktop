@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Porog
+GenericName=Fond Suite Launcher
+Comment=The way back into the Fond suite
+Exec=porog
+Icon=io.github.calstfrancis.Porog
+Terminal=false
+Type=Application
+Categories=Office;
+Keywords=fond;launcher;dashboard;resume;
+StartupNotify=true

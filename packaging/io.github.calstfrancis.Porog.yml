@@ -1,0 +1,52 @@
+app-id: io.github.calstfrancis.Porog
+runtime: org.gnome.Platform
+runtime-version: '50'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: porog
+
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --talk-name=org.freedesktop.portal.Desktop
+  # Porog's whole job is starting the other Fond flatpaks, which live on the host: every
+  # `flatpak info` / `flatpak run` goes through `flatpak-spawn --host` (porog-core's
+  # `host_flatpak_command`) — the same grant Kartoteka and Sputnik carry to start Pereplyot.
+  - --talk-name=org.freedesktop.Flatpak
+  # The status files the Fond apps write (PLAN.md §3.1). `:create` because flatpak
+  # skips a path that does not exist yet, and no app may have written one so far.
+  - --filesystem=xdg-data/fond:create
+  # Nothing else on disk: Porog's own config stays in the sandbox's config dir, and it asks
+  # the host whether a resume target still exists rather than being granted the home dir.
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/porog/cargo
+    CARGO_NET_OFFLINE: 'true'
+
+modules:
+  - name: porog
+    buildsystem: simple
+    sources:
+      - type: git
+        url: https://github.com/calstfrancis/porog.git
+        branch: main
+      # Vendored cargo dependencies. Regenerate with flatpak-cargo-generator whenever
+      # Cargo.lock changes (root CLAUDE.md's vendored-dependency rule).
+      - cargo-sources.json
+      - type: file
+        path: io.github.calstfrancis.Porog.metainfo.xml
+    build-commands:
+      - mkdir -p cargo
+      - printf '[source.vendored-sources]\ndirectory = "/run/build/porog/cargo/vendor"\n\n[source.crates-io]\nreplace-with = "vendored-sources"\n' > cargo/config.toml
+      - cargo --offline build --release -p porog-ui-gtk
+      - install -Dm755 target/release/porog /app/bin/porog
+      - strip /app/bin/porog
+      # Desktop entry, icon, AppStream metainfo.
+      - install -Dm644 packaging/io.github.calstfrancis.Porog.desktop /app/share/applications/io.github.calstfrancis.Porog.desktop
+      - install -Dm644 packaging/porog.svg /app/share/icons/hicolor/scalable/apps/io.github.calstfrancis.Porog.svg
+      - install -Dm644 io.github.calstfrancis.Porog.metainfo.xml /app/share/metainfo/io.github.calstfrancis.Porog.metainfo.xml

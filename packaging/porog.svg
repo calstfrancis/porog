@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b4a63"/>
+      <stop offset="1" stop-color="#232c3d"/>
+    </linearGradient>
+    <linearGradient id="light" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3e3ae"/>
+      <stop offset="1" stop-color="#e8cf84"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#tile)"/>
+
+  <!-- an open doorway, lit from the far side -->
+  <path d="M44 100 V40 a20 20 0 0 1 40 0 V100 Z" fill="url(#light)"/>
+  <!-- the light it throws across the floor -->
+  <path d="M44 100 H84 L98 112 H30 Z" fill="#e8cf84" opacity="0.35"/>
+  <!-- the threshold itself -->
+  <rect x="34" y="98" width="60" height="5" rx="2.5" fill="#b8923a"/>
+</svg>
