@@ -33,8 +33,11 @@ The Now card at the top is asked for, not stored: each time the window gains foc
 `flatpak run --command=sputnik-now io.github.calstfrancis.Sputnik`, which prints Sputnik's Today
 card as one line of JSON (needs a Sputnik that has the command).
 
-Search is asked for too: `flatpak run --command=kartoteka-search io.github.calstfrancis.Kartoteka WORDS`
-prints Kartoteka's hits as one line of JSON, and Enter opens one with `kartoteka:KEY`.
+Search is asked for too: `flatpak run --command=<app>-search <app id> WORDS` (`sputnik-search`,
+`pereplyot-search`, `kartoteka-search`, `zerkalo-search`, `skrizhal-search`) prints that app's hits as
+one line of JSON. A hit carries either its `args` (Pereplyot: the file and `--annotation=ID`;
+Zerkalo: the file; Sputnik: a `sputnik:SEMESTER/COURSE/KIND[/FILE]` link) or a `key` that Porog turns
+into `kartoteka:KEY` / `skrizhal:KEY`. Enter hands them back to `flatpak run`.
 
 ## Requirements
 

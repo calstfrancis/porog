@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **Search asks all five apps.** Sputnik (class notes, topics, materials), Pereplyot (documents and
+  your highlights and notes in them), Zerkalo (`.typ` files in the work folder) and Skrizhal (CV
+  entries) now answer Ctrl+K as Kartoteka already did, each through its own `<app>-search` command
+  (needs the matching app release). The apps are asked at the same time, so a slow one no longer
+  holds up the others.
+
 ## [0.1.0] "Open Door" — 2026-11-11 — The way back into the Fond suite
 
 ### Added

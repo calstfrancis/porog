@@ -189,8 +189,11 @@ Three literal outcomes when there is no item to show: "Nothing placed on today."
 ### Phase 4 — Search (Ctrl+K)
 - [x] Decided (Claude, Cal: "do whichever you recommend"): a helper command per app, not reading
       files. Kartoteka first: `kartoteka-gtk --search-json` / flatpak `kartoteka-search`, reading its
-      existing index; `kartoteka:KEY` selects a reference. Sputnik, Pereplyot, Zerkalo and Skrizhal
-      are not searchable yet: each needs its own helper and index, one app at a time.
+      existing index; `kartoteka:KEY` selects a reference.
+- [x] The other four (2026-11-12, unreleased): `sputnik-search` (Vault::search, opens `sputnik:` links),
+      `pereplyot-search` (library titles + annotations, opens file + `--annotation=`),
+      `zerkalo-search` (`.typ` files in work_dir by name/text, opens the file), `skrizhal-search`
+      (CV entries, opens `skrizhal:KEY`). Porog asks all five in parallel.
 - [x] One box (Ctrl+K), results grouped by app in the fixed app order, Enter opens in that app.
       Asks after a 450 ms pause; the window keeps one size.
 
