@@ -1,4 +1,4 @@
-# Porog v0.1.0 "Open Door"
+# Porog v0.2.0 "Wide Threshold"
 
 Install via Flatpak:
 
@@ -8,16 +8,23 @@ flatpak remote-add --user calstfrancis \
 flatpak install calstfrancis io.github.calstfrancis.Porog
 ```
 
+Already installed? Update with:
+
+```bash
+flatpak update io.github.calstfrancis.Porog
+```
+
 ---
 
 ### What's new
 
-The first release. Porog is the way back into the Fond suite: one window with a fixed row for Sputnik,
-Pereplyot, Kartoteka, Zerkalo and Skrizhal, always in the same order. Each row says what you were last doing
-in that app and offers *Resume* when it can reopen it. The top of the window shows Sputnik's Now card, and
-Ctrl+K searches your Kartoteka library. Nothing on screen changes while you are looking at it.
+Ctrl+K now searches the whole suite. It asks Sputnik (class notes, topics, materials), Pereplyot (documents and
+your highlights and notes), Kartoteka (your library), Zerkalo (`.typ` files in your work folder) and Skrizhal (CV
+entries) at the same time, so a slow app no longer holds up the others. Enter opens the result in its app, at the
+right note, page or entry.
 
-Porog needs the Fond apps' current releases to show their status.
+Search needs each app's current release: Sputnik 0.25.0, Pereplyot 0.24.0, Zerkalo 0.58.0 and Skrizhal 0.5.0. An
+app that is missing or too old is simply not listed.
 
 ---
 

@@ -1,6 +1,6 @@
 [package]
 name = "porog-ui-gtk"
-version = "0.1.0"
+version = "0.2.0"
 description = "Porog — the way back into the Fond suite (proprietary)"
 license = "LicenseRef-Proprietary"
 edition.workspace = true

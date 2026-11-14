@@ -5,7 +5,7 @@ row for each of Sputnik, Pereplyot, Kartoteka, Zerkalo and Skrizhal.
 
 It is at an early stage. Each row opens its app, or says "Not installed", and shows what you
 were last doing there with a *Resume* button when the app can reopen it, and the top of the window
-shows Sputnik's Now card. Ctrl+K searches the suite (Kartoteka so far); see `PLAN.md`.
+shows Sputnik's Now card. Ctrl+K searches the whole suite; see `PLAN.md`.
 
 ## Using it
 

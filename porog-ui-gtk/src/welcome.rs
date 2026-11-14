@@ -13,7 +13,7 @@ use porog_core::config::Config;
 
 use crate::VERSION;
 
-pub(crate) const RELEASE_NAME: &str = "Open Door";
+pub(crate) const RELEASE_NAME: &str = "Wide Threshold";
 
 /// Show the window if this version has not been seen: the welcome the first time ever,
 /// What's New after an update.
@@ -109,24 +109,10 @@ pub fn show(parent: &adw::ApplicationWindow, first_run: bool) {
 }
 
 /// Updated at release time, with `RELEASE_NAME`.
-const NEW: &[(&str, &str)] = &[
-    (
-        "A fixed board for the suite",
-        "Sputnik, Pereplyot, Kartoteka, Zerkalo and Skrizhal each keep one row, in the same place, whatever you used last.",
-    ),
-    (
-        "Resume",
-        "Each row says what you were last doing there, and its button reopens exactly that when it can. The details word shows the last three.",
-    ),
-    (
-        "Today, from Sputnik",
-        "The top of the window shows Sputnik's Now card in Sputnik's own words, refreshed when you come back to the window.",
-    ),
-    (
-        "Search the suite",
-        "Ctrl+K searches your Kartoteka library; Enter opens the result there. The other apps will follow.",
-    ),
-];
+const NEW: &[(&str, &str)] = &[(
+    "Search the whole suite",
+    "Ctrl+K now asks Sputnik, Pereplyot, Kartoteka, Zerkalo and Skrizhal at once, and Enter opens the result in its app. It needs each app's current release.",
+)];
 
 const TRY: &[(&str, &str)] = &[
     (
@@ -137,7 +123,7 @@ const TRY: &[(&str, &str)] = &[
         "Click an app's name",
         "Opens the app plainly, without resuming anything.",
     ),
-    ("Press Ctrl+K", "Search your Kartoteka library from here."),
+    ("Press Ctrl+K", "Search all five apps from here."),
 ];
 
 fn section(text: &str) -> gtk::Label {

@@ -21,7 +21,7 @@
       <li>Nothing on screen changes while you are looking at it.</li>
       <li>Resume: what you were last doing in each app, with a button that reopens it.</li>
       <li>Today: Sputnik's Now card at the top, in Sputnik's own words.</li>
-      <li>Ctrl+K searches your Kartoteka library.</li>
+      <li>Ctrl+K searches all five apps at once.</li>
       <li>System, Light and Dark themes.</li>
     </ul>
   </description>
@@ -37,6 +37,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.2.0" date="2026-11-14">
+      <description>
+        <p>0.2.0 "Wide Threshold" — Ctrl+K now searches every Fond app, not just Kartoteka: class
+        notes and materials in Sputnik, documents and annotations in Pereplyot, .typ files in Zerkalo
+        and CV entries in Skrizhal. Needs each app's current release.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-11-11">
       <description>
         <p>0.1.0 "Open Door" — the first release. One window with a fixed row for each Fond app,

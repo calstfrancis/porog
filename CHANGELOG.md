@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0] "Wide Threshold" — 2026-11-14 — Search reaches every app
 
 ### Changed
 - **Search asks all five apps.** Sputnik (class notes, topics, materials), Pereplyot (documents and
