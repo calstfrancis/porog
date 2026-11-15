@@ -31,7 +31,10 @@ app's own arguments back to `flatpak run`. Porog links none of the apps.
 
 The Now card at the top is asked for, not stored: each time the window gains focus Porog runs
 `flatpak run --command=sputnik-now io.github.calstfrancis.Sputnik`, which prints Sputnik's Today
-card as one line of JSON (needs a Sputnik that has the command).
+card as one line of JSON (needs a Sputnik that has the command). When the item is a reading or a paper
+assignment the reply also carries an `action` (`label`, `app`, `args`); Porog shows it as a button and
+hands `args` back to `flatpak run` for that app (*Start reading* → Pereplyot, *New essay* → Zerkalo's
+`--new-document=TITLE`).
 
 Search is asked for too: `flatpak run --command=<app>-search <app id> WORDS` (`sputnik-search`,
 `pereplyot-search`, `kartoteka-search`, `zerkalo-search`, `skrizhal-search`) prints that app's hits as

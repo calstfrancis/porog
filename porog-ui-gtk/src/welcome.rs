@@ -13,7 +13,7 @@ use porog_core::config::Config;
 
 use crate::VERSION;
 
-pub(crate) const RELEASE_NAME: &str = "Wide Threshold";
+pub(crate) const RELEASE_NAME: &str = "Ready Hand";
 
 /// Show the window if this version has not been seen: the welcome the first time ever,
 /// What's New after an update.
@@ -110,8 +110,8 @@ pub fn show(parent: &adw::ApplicationWindow, first_run: bool) {
 
 /// Updated at release time, with `RELEASE_NAME`.
 const NEW: &[(&str, &str)] = &[(
-    "Search the whole suite",
-    "Ctrl+K now asks Sputnik, Pereplyot, Kartoteka, Zerkalo and Skrizhal at once, and Enter opens the result in its app. It needs each app's current release.",
+    "Actions on the Now card",
+    "When Sputnik's Now item is a reading or a paper, the card gets a button beside Open Sputnik: Start reading opens it in Pereplyot, New essay starts a blank document in Zerkalo. It needs the current Sputnik and Zerkalo.",
 )];
 
 const TRY: &[(&str, &str)] = &[

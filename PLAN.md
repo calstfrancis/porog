@@ -198,8 +198,19 @@ Three literal outcomes when there is no item to show: "Nothing placed on today."
       Asks after a 450 ms pause; the window keeps one size.
 
 ### Phase 5 — Cross-app actions
-- [ ] "Start this reading" (Sputnik item → Pereplyot), "New essay for this assignment"
-      (Sputnik item → Zerkalo). Design after phases 2–4 are in daily use.
+- [x] Decided (Cal, 2026-11-14): the Now card only; "New essay" makes a blank `.typ` named for the
+      assignment; "Start reading" just opens the file (Pereplyot already remembers the place).
+- [x] Sputnik's `--now` reply gains an optional `action` `{label, app, args}`: a `key:` reading with
+      its file or a PDF/EPUB material → Pereplyot with the same arguments Sputnik's own timeline uses;
+      a paper assignment → Zerkalo `--new-document="COURSE: Assignment"`. Porog drops an action with no
+      label or for an app it does not know, and shows the button beside *Open Sputnik*.
+- [x] Zerkalo `--new-document=TITLE`: creates the file in `work_dir` (reads only that setting, never
+      the keyring) and starts as if given that file.
+- [x] Tested end to end (unreleased, 2026-11-14) with a stand-in `flatpak` running the dev builds:
+      the button appears for a paper, a click starts Zerkalo, the file is created and opened. Reading
+      actions checked as Sputnik output only (material and library key), not clicked.
+- [ ] Not done: the study timer is not started by "Start reading" (Sputnik takes no commands); the
+      real flatpak sandbox path; releases of Sputnik, Zerkalo and Porog.
 
 ## 5. Decisions
 

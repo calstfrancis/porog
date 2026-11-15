@@ -1,4 +1,4 @@
-# Porog v0.2.0 "Wide Threshold"
+# Porog v0.3.0 "Ready Hand"
 
 Install via Flatpak:
 
@@ -18,13 +18,12 @@ flatpak update io.github.calstfrancis.Porog
 
 ### What's new
 
-Ctrl+K now searches the whole suite. It asks Sputnik (class notes, topics, materials), Pereplyot (documents and
-your highlights and notes), Kartoteka (your library), Zerkalo (`.typ` files in your work folder) and Skrizhal (CV
-entries) at the same time, so a slow app no longer holds up the others. Enter opens the result in its app, at the
-right note, page or entry.
+The Now card can now carry a button beside *Open Sputnik*. When Sputnik's current item is a reading it can open,
+*Start reading* opens the file in Pereplyot where you left off. When it is a paper assignment, *New essay* starts a
+blank document in Zerkalo named for the course and assignment. Sputnik decides which button, if any, goes with the
+item; Porog only runs it.
 
-Search needs each app's current release: Sputnik 0.25.0, Pereplyot 0.24.0, Zerkalo 0.58.0 and Skrizhal 0.5.0. An
-app that is missing or too old is simply not listed.
+Needs Sputnik 0.26.0 and, for *New essay*, Zerkalo 0.59.0. With older versions the card looks as before.
 
 ---
 

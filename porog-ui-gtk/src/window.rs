@@ -253,10 +253,15 @@ struct NowArea {
     title: gtk::Label,
     detail: gtk::Label,
     footer: gtk::Label,
+    action: gtk::Button,
+    /// What the action button starts; set with each answer from Sputnik.
+    target: ActionTarget,
 }
 
+type ActionTarget = Rc<RefCell<Option<(&'static App, Vec<String>)>>>;
+
 impl NowArea {
-    fn new() -> (gtk::Box, Self) {
+    fn new(toasts: &adw::ToastOverlay) -> (gtk::Box, Self) {
         let eyebrow = gtk::Label::builder()
             .label("NOW  (from Sputnik)")
             .xalign(0.0)
@@ -291,8 +296,23 @@ impl NowArea {
             .action_name("win.open-plain")
             .action_target(&0i32.to_variant())
             .build();
+        let action = gtk::Button::builder()
+            .valign(gtk::Align::Center)
+            .visible(false)
+            .build();
+        let target = ActionTarget::default();
+        action.connect_clicked({
+            let target = target.clone();
+            let toasts = toasts.clone();
+            move |_| {
+                if let Some((app, args)) = target.borrow().clone() {
+                    launch(app, args, &toasts);
+                }
+            }
+        });
         let line = gtk::Box::new(gtk::Orientation::Horizontal, 12);
         line.append(&text);
+        line.append(&action);
         line.append(&open);
         let card = gtk::Box::builder()
             .height_request(104)
@@ -312,20 +332,35 @@ impl NowArea {
             title,
             detail,
             footer,
+            action,
+            target,
         };
         area.show(&NowView::Message("Looking…".to_string()));
         (card, area)
     }
 
     fn show(&self, view: &NowView) {
-        let (title, detail, footer) = match view {
+        let (title, detail, footer, action) = match view {
             NowView::Card {
                 title,
                 detail,
                 footer,
-            } => (title.as_str(), detail.as_str(), footer.as_deref()),
-            NowView::Message(message) => (message.as_str(), "", None),
+                action,
+            } => (
+                title.as_str(),
+                detail.as_str(),
+                footer.as_deref(),
+                action.as_ref(),
+            ),
+            NowView::Message(message) => (message.as_str(), "", None, None),
         };
+        self.action.set_visible(action.is_some());
+        if let Some(action) = action {
+            self.action.set_label(&action.label);
+            self.action
+                .set_tooltip_text(Some(&format!("{} in {}", action.label, action.app.name)));
+        }
+        *self.target.borrow_mut() = action.map(|a| (a.app, a.args.clone()));
         self.title.set_label(title);
         self.detail.set_label(detail);
         self.detail.set_visible(!detail.is_empty());
@@ -443,7 +478,7 @@ pub fn build(app: &adw::Application) {
         .vexpand(true)
         .child(&list)
         .build();
-    let (now_card, now_area) = NowArea::new();
+    let (now_card, now_area) = NowArea::new(&toasts);
     let body = gtk::Box::new(gtk::Orientation::Vertical, 0);
     body.append(&now_card);
     body.append(&scroll);

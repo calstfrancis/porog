@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0] "Ready Hand" — 2026-11-15 — Actions on the Now card
+
+### Added
+- **Actions on the Now card.** When Sputnik's Now item is a reading it can open, or a paper assignment,
+  the card shows a second button beside *Open Sputnik*: **Start reading** opens the file in Pereplyot
+  (where you left off), **New essay** starts a blank document named for the course and assignment in
+  Zerkalo. Sputnik says which button, if any, goes with the item; Porog only runs it. Needs Sputnik's
+  and, for *New essay*, Zerkalo's next release.
+
 ## [0.2.0] "Wide Threshold" — 2026-11-14 — Search reaches every app
 
 ### Changed

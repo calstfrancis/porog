@@ -11,7 +11,7 @@ use std::time::Duration;
 use serde::Deserialize;
 
 use crate::helper::{self, Outcome};
-use crate::{is_installed, APPS};
+use crate::{is_installed, App, APPS};
 
 /// The highest `schema` of Sputnik's reply this Porog understands.
 const SCHEMA: u32 = 1;
@@ -22,6 +22,14 @@ pub const NOT_INSTALLED: &str = "Sputnik is not installed.";
 pub const TOO_OLD: &str = "This Sputnik is too old to show today here.";
 pub const NO_ANSWER: &str = "Sputnik did not answer.";
 
+/// A button Sputnik offers for its Now item: start `app` with `args`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NowAction {
+    pub label: String,
+    pub app: &'static App,
+    pub args: Vec<String>,
+}
+
 /// What the Now area shows.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NowView {
@@ -31,6 +39,8 @@ pub enum NowView {
         detail: String,
         /// "2 more today · 1 needs a decision", or nothing when both are zero.
         footer: Option<String>,
+        /// "Start reading", "New essay": what Sputnik says can be done with the item.
+        action: Option<NowAction>,
     },
     /// One plain line: a literal outcome above, or Sputnik's own reason it has no card
     /// ("Sputnik has no vault yet.").
@@ -42,7 +52,32 @@ struct Reply {
     #[serde(default)]
     schema: u32,
     now: Option<Card>,
+    action: Option<Action>,
     error: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Action {
+    #[serde(default)]
+    label: String,
+    #[serde(default)]
+    app: String,
+    #[serde(default)]
+    args: Vec<String>,
+}
+
+impl Action {
+    /// Only an action with a label, for an app Porog knows, can be shown. Anything else is
+    /// dropped rather than guessed at.
+    fn into_action(self) -> Option<NowAction> {
+        let label = self.label.trim();
+        let app = APPS.iter().find(|a| a.status_name == self.app)?;
+        (!label.is_empty()).then(|| NowAction {
+            label: label.to_string(),
+            app,
+            args: self.args,
+        })
+    }
 }
 
 #[derive(Deserialize)]
@@ -90,6 +125,7 @@ pub fn parse(text: &str) -> NowView {
         footer: footer(card.more_today, card.needs_decision),
         title: card.title,
         detail: card.detail,
+        action: reply.action.and_then(Action::into_action),
     }
 }
 
@@ -121,8 +157,40 @@ mod tests {
                 title: "Example Reader, ch. 3".to_string(),
                 detail: "THM 501 · free for 40 min".to_string(),
                 footer: Some("2 more today · 1 needs a decision".to_string()),
+                action: None,
             }
         );
+    }
+
+    #[test]
+    fn sputniks_action_is_kept_for_a_known_app() {
+        let reply = r#"{"schema":1,"now":{"title":"Essay","detail":"","more_today":0,"needs_decision":0},
+            "action":{"label":"New essay","app":"zerkalo","args":["--new-document=THM 501: Essay"]}}"#;
+        let NowView::Card { action, .. } = parse(reply) else {
+            panic!("expected a card");
+        };
+        let action = action.unwrap();
+        assert_eq!(action.label, "New essay");
+        assert_eq!(action.app.name, "Zerkalo");
+        assert_eq!(
+            action.args,
+            vec!["--new-document=THM 501: Essay".to_string()]
+        );
+    }
+
+    #[test]
+    fn an_action_for_an_unknown_app_or_without_a_label_is_dropped() {
+        for action in [
+            r#"{"label":"Go","app":"gimp","args":[]}"#,
+            r#"{"label":" ","app":"zerkalo","args":[]}"#,
+            r#"{"app":"zerkalo"}"#,
+        ] {
+            let reply = format!(r#"{{"schema":1,"now":{{"title":"x"}},"action":{action}}}"#);
+            let NowView::Card { action, .. } = parse(&reply) else {
+                panic!("expected a card");
+            };
+            assert_eq!(action, None, "{reply}");
+        }
     }
 
     #[test]

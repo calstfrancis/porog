@@ -37,6 +37,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.3.0" date="2026-11-15">
+      <description>
+        <p>0.3.0 "Ready Hand" — the Now card can carry a button from Sputnik: Start reading opens
+        the current reading in Pereplyot, New essay starts a blank document in Zerkalo for a paper
+        assignment. Needs Sputnik 0.26.0 and, for New essay, Zerkalo 0.59.0.</p>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-11-14">
       <description>
         <p>0.2.0 "Wide Threshold" — Ctrl+K now searches every Fond app, not just Kartoteka: class
