@@ -233,6 +233,17 @@ for (getting back into work), and let it be reached without opening its window. 
 hold. Each phase lists the other repos it touches. Apps change first and Porog copes with an
 older app (fields stay optional, P7), so no release has to wait for another.
 
+### Before releasing Plan II
+Everything is committed locally in Porog, Zerkalo, Sputnik, Pereplyot, Kartoteka, Skrizhal and fond-core; nothing is pushed.
+- Push fond-core, then in every app and Porog bump the `fond-status` git `rev` to it, regenerate `Cargo.lock` and
+  `packaging/cargo-sources.json` (Porog also gained `ksni`). Each repo has a local, untracked `.cargo/config.toml`
+  `[patch]` pointing at `../fond-core` (Skrizhal's tracked one has the patch lines appended and is marked
+  `assume-unchanged`): delete those lines first. Until then CI cannot build any of them.
+- Fill `MIN_VERSIONS` in `porog-core/src/lib.rs` for WhatsNew once the apps are released; bump Porog's `RELEASE_NAME` and
+  `NEW` list. Release the apps before Porog.
+- Test in the real flatpak sandbox with Cal (Phase 7 item), and the tray on a GNOME with the AppIndicator extension.
+- Not exercised: Sputnik's `pieces` against a real paper on the Now card; Orca; 200% text.
+
 Order: Phase 7 first (D10). After that, the numbered order, though 10 and 11 do not depend on
 8 or 9.
 
@@ -257,7 +268,7 @@ Fixes first: a launcher you cannot trust undoes everything else.
       start." `porog_core::launch` reports an early exit through a channel instead of only
       reaping the child. The same applies to the Now card's buttons and search results (search
       closes its window, so only the early-exit toast there).
-- [ ] **The real sandbox, tested with Cal.** Install the current flatpak and check by hand: Open,
+- [ ] **The real sandbox, tested with Cal.** NOT DONE: needs a flatpak build and Cal at the keyboard. Install the current flatpak and check by hand: Open,
       Resume (the host `test -e` check), the Now card, search, the Now card's action button, and a
       dropped file. Nothing here has run in the real sandbox yet.
 - [x] **Dropped files in the sandbox.** A file dropped on the sandboxed Porog arrives as a
@@ -401,15 +412,15 @@ No GNOME Shell search provider: Cal does not use Activities search (D13).
 - Touches: Porog, and some apps for `--search=`.
 
 ### Phase 14 — Engineering
-- [ ] Remove the `unsafe` `set_data` in `search.rs`: keep each row's target in a `Vec` indexed by
+- [x] Remove the `unsafe` `set_data` in `search.rs`: keep each row's target in a `Vec` indexed by
       row, or a small `glib::BoxedAnyObject`.
-- [ ] **Shared example replies.** `fond-core/contracts/` holds JSON examples of every helper reply
+- [x] **Shared example replies** (in `fond-status`'s `contracts` module, so they ride the pinned rev; Porog tests them; the apps' own comparison tests are not written yet). `fond-core/contracts/` holds JSON examples of every helper reply
       and the status file (`now/*.json`, `search/*.json`, `whats-new/*.json`, `status/*.json`). Porog
       parses each in a test; each app checks that what it prints has the same fields. Plain files
       rather than shared Rust types, so no app has to move to a new fond-core rev to stay in step.
-- [ ] Headless smoke test in CI: Xvfb plus the fake `flatpak` from `capture-screenshots.sh`,
+- [x] Headless smoke test in CI (`smoke-test.sh`): Xvfb plus the fake `flatpak` from `capture-screenshots.sh`,
       checking the window builds, Now and rows fill, and a launch reaches the fake.
-- [ ] Porog `CLAUDE.md`: `MIN_VERSIONS` and the contract examples in the release checklist.
+- [x] Porog `CLAUDE.md`: `MIN_VERSIONS` and the contract examples in the release checklist.
 - Touches: fond-core, all five apps (tests only), Porog.
 
 ## 5. Decisions

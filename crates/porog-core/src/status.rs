@@ -105,7 +105,10 @@ pub fn tray_line(app: &App, state: &RowState) -> (String, bool) {
         return (format!("{} is not installed", app.name), false);
     }
     match state.resume.first() {
-        Some(first) => (format!("Resume {} — {}", app.name, first.title.trim()), true),
+        Some(first) => (
+            format!("Resume {} — {}", app.name, first.title.trim()),
+            true,
+        ),
         None => (format!("Open {}", app.name), true),
     }
 }
@@ -269,6 +272,17 @@ mod tests {
             current_summary(Some("  ".to_string()), None, at("2026-11-10T12:00:00Z")),
             None
         );
+    }
+
+    #[test]
+    fn the_shared_example_status_file_reads_with_its_context_line() {
+        let status: Status = serde_json::from_str(fond_status::contracts::STATUS).unwrap();
+        assert_eq!(status.app, "zerkalo");
+        assert!(status.resume[0]
+            .context
+            .as_deref()
+            .unwrap()
+            .starts_with("Method"));
     }
 
     #[test]

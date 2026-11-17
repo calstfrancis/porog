@@ -306,6 +306,19 @@ mod tests {
     }
 
     #[test]
+    fn the_shared_example_reply_is_understood() {
+        let Answer::Hits(hits) = parse(&SOURCES[2], fond_status::contracts::SEARCH_HITS) else {
+            panic!("expected hits");
+        };
+        assert_eq!(hits.len(), 2);
+        assert_eq!(hits[0].args, ["kartoteka:example2019study"]);
+        assert_eq!(
+            hits[1].args,
+            ["/tmp/example/reader.pdf", "--annotation=hl-1"]
+        );
+    }
+
+    #[test]
     fn kartotekas_hits_open_by_key() {
         let reply = r#"{"schema":1,"hits":[{"key":"example2019example","title":"An Example Study",
             "author":"Example, Ada","year":"2019"},{"key":"bare","title":"","author":"","year":""}]}"#;

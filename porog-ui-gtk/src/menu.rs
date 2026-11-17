@@ -33,7 +33,8 @@ fn popover_separator() -> gtk::Separator {
     sep
 }
 
-const TRAY_NOTE: &str = "An icon with Resume and Open for each app. Closing the window then keeps Porog running.";
+const TRAY_NOTE: &str =
+    "An icon with Resume and Open for each app. Closing the window then keeps Porog running.";
 const TRAY_NO_HOST: &str = "Your desktop shows no tray icons. On GNOME, install the AppIndicator extension. Closing the window then keeps Porog running.";
 
 pub fn apply_theme(theme: Theme) {

@@ -243,6 +243,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_shared_example_replies_are_understood() {
+        let NowView::Card {
+            title,
+            action,
+            later,
+            pieces,
+            footer,
+            ..
+        } = parse(fond_status::contracts::NOW_CARD)
+        else {
+            panic!("expected a card");
+        };
+        assert_eq!(title, "Final essay");
+        assert_eq!(footer.as_deref(), Some("1 more today"));
+        assert_eq!(action.unwrap().label, "Write essay");
+        assert_eq!(later.len(), 1);
+        assert_eq!(pieces.len(), 2);
+        assert_eq!(
+            parse(fond_status::contracts::NOW_ERROR),
+            NowView::Message("Sputnik has no vault yet.".to_string())
+        );
+    }
+
+    #[test]
     fn sputniks_words_are_shown_unchanged() {
         let reply = r#"{"schema":1,"now":{"state":"work","title":"Example Reader, ch. 3",
             "detail":"THM 501 · free for 40 min","more_today":2,"needs_decision":1}}"#;

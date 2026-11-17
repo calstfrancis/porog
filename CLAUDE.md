@@ -26,6 +26,12 @@ data contract, the phases and the settled decisions.
 - **Search is asked for, like the Now card.** Porog reads no app's files; each searchable app
   ships a helper command (`porog-core/src/search.rs` `SOURCES`). Show each app's answer in its words.
 
+- **Ask for what an app can do through `MIN_VERSIONS`** (`porog-core/src/lib.rs`): whenever Porog starts
+  asking an app for something new, add its first release there so messages can say what to update to.
+- **Helper replies have shared examples** in `fond_status::contracts`; add one for any new reply and test it.
+- **`./smoke-test.sh`** starts the real window headlessly against a fake `flatpak`; run it after window changes.
+- Tray (`tray.rs`) runs on its own thread and reaches the GTK thread only through `tray::set_handler`.
+
 ## Version
 
 `porog-ui-gtk/Cargo.toml`'s `version` is the sole source of truth. `porog-core` keeps its

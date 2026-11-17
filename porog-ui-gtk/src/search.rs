@@ -121,7 +121,9 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
                     let groups = groups.clone();
                     move || {
                         pending.set(None);
-                        ask_all(&query, number, &token, &latest, &list, &line, &targets, &groups);
+                        ask_all(
+                            &query, number, &token, &latest, &list, &line, &targets, &groups,
+                        );
                     }
                 });
             pending.set(Some(id));
@@ -253,7 +255,9 @@ fn ask_all(
                 return;
             }
             if let Some(group) = group {
-                found.set(found.get() + replace_group(index, &group, &query, &list, &targets, &groups));
+                found.set(
+                    found.get() + replace_group(index, &group, &query, &list, &targets, &groups),
+                );
             }
             waiting.set(waiting.get() - 1);
             line.set_label(&summary(found.get(), waiting.get()));

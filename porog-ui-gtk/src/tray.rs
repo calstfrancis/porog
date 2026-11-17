@@ -137,10 +137,9 @@ impl Tray {
         *self.hold.borrow_mut() = Some(self.app.hold());
         let tray = self.clone();
         glib::spawn_future_local(async move {
-            let spawned = gio::spawn_blocking(move || {
-                PorogTray { lines }.assume_sni_available(true).spawn()
-            })
-            .await;
+            let spawned =
+                gio::spawn_blocking(move || PorogTray { lines }.assume_sni_available(true).spawn())
+                    .await;
             match spawned {
                 Ok(Ok(handle)) if tray.on.get() => *tray.handle.borrow_mut() = Some(handle),
                 Ok(Ok(handle)) => {

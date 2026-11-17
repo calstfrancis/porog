@@ -59,7 +59,11 @@ pub fn parse(app: &App, text: &str) -> NewsView {
     if reply.schema == 0 || reply.schema > SCHEMA || reply.version.trim().is_empty() {
         return too_old(app);
     }
-    let heading = match reply.release_name.as_deref().filter(|n| !n.trim().is_empty()) {
+    let heading = match reply
+        .release_name
+        .as_deref()
+        .filter(|n| !n.trim().is_empty())
+    {
         Some(name) => format!("What's new in {} {} “{name}”", app.name, reply.version),
         None => format!("What's new in {} {}", app.name, reply.version),
     };
@@ -97,6 +101,16 @@ mod tests {
     }
 
     #[test]
+    fn the_shared_example_reply_is_understood() {
+        let NewsView::Notes { heading, items } = parse(&APPS[3], fond_status::contracts::WHATS_NEW)
+        else {
+            panic!("expected notes");
+        };
+        assert_eq!(heading, "What's new in Zerkalo 0.59.0 “Clean Slate”");
+        assert_eq!(items.len(), 2);
+    }
+
+    #[test]
     fn a_release_without_a_name_has_a_plain_heading() {
         let NewsView::Notes { heading, items } =
             parse(&APPS[2], r#"{"schema":1,"version":"0.24.0","items":[]}"#)
@@ -112,8 +126,14 @@ mod tests {
         let old = too_old(&APPS[1]);
         assert_eq!(parse(&APPS[1], ""), old);
         assert_eq!(parse(&APPS[1], "not json"), old);
-        assert_eq!(parse(&APPS[1], r#"{"schema":2,"version":"1","items":[]}"#), old);
-        assert_eq!(parse(&APPS[1], r#"{"schema":1,"version":"","items":[]}"#), old);
+        assert_eq!(
+            parse(&APPS[1], r#"{"schema":2,"version":"1","items":[]}"#),
+            old
+        );
+        assert_eq!(
+            parse(&APPS[1], r#"{"schema":1,"version":"","items":[]}"#),
+            old
+        );
         let NewsView::Message(text) = old else {
             panic!("expected a message");
         };

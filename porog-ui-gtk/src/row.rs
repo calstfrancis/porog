@@ -381,11 +381,12 @@ impl AppRow {
         let row = self.clone();
         launch_then(self.app, args, &self.toasts, move || {
             row.starting.set(false);
-            row.primary.set_label(if row.state.borrow().resume.is_empty() {
-                "Open"
-            } else {
-                "Resume"
-            });
+            row.primary
+                .set_label(if row.state.borrow().resume.is_empty() {
+                    "Open"
+                } else {
+                    "Resume"
+                });
             row.primary.set_sensitive(true);
         });
     }

@@ -175,7 +175,10 @@ pub fn installed_version(app: &App) -> Option<String> {
         .stderr(Stdio::null())
         .output()
         .ok()?;
-    output.status.success().then(|| version_in(&String::from_utf8_lossy(&output.stdout)))?
+    output
+        .status
+        .success()
+        .then(|| version_in(&String::from_utf8_lossy(&output.stdout)))?
 }
 
 /// The value of the `Version:` line in `flatpak info` output.
@@ -215,7 +218,9 @@ pub fn launch(app: &App, args: &[String]) -> io::Result<()> {
         match child.try_wait()? {
             Some(status) if status.success() => return Ok(()),
             Some(status) => {
-                return Err(io::Error::other(format!("flatpak run exited with {status}")))
+                return Err(io::Error::other(format!(
+                    "flatpak run exited with {status}"
+                )))
             }
             None if Instant::now() >= deadline => break,
             None => std::thread::sleep(Duration::from_millis(50)),
@@ -262,7 +267,9 @@ mod tests {
         let commands = install_commands(&APPS[3]);
         let lines: Vec<_> = commands.lines().collect();
         assert_eq!(lines.len(), 2);
-        assert!(lines[0].starts_with("flatpak remote-add --user --if-not-exists calstfrancis https://"));
+        assert!(
+            lines[0].starts_with("flatpak remote-add --user --if-not-exists calstfrancis https://")
+        );
         assert_eq!(
             lines[1],
             "flatpak install --user calstfrancis io.github.calstfrancis.Zerkalo"

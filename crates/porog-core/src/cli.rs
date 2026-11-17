@@ -40,7 +40,10 @@ fn row_of(name: &str) -> Result<usize, String> {
         .position(|app| app.status_name == name)
         .ok_or_else(|| {
             let known: Vec<_> = APPS.iter().map(|a| a.status_name).collect();
-            format!("{name:?} is not a Fond app. Use one of: {}", known.join(", "))
+            format!(
+                "{name:?} is not a Fond app. Use one of: {}",
+                known.join(", ")
+            )
         })
 }
 
@@ -66,7 +69,9 @@ mod tests {
 
     #[test]
     fn anything_else_is_an_error_that_says_what_would_work() {
-        assert!(parse_all(&["--resume=gimp"]).unwrap_err().contains("zerkalo"));
+        assert!(parse_all(&["--resume=gimp"])
+            .unwrap_err()
+            .contains("zerkalo"));
         assert!(parse_all(&["--resume"]).is_err());
         assert!(parse_all(&["--frobnicate"]).is_err());
     }

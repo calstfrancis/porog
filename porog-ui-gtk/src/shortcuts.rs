@@ -9,8 +9,14 @@ use crate::welcome::section;
 
 const KEYS: &[(&str, &str)] = &[
     ("Up / Down", "Move between the app rows"),
-    ("Enter", "Do what the focused row's button says (Resume, Open or Install…)"),
-    ("Alt+1 … Alt+5", "The same for Sputnik, Pereplyot, Kartoteka, Zerkalo, Skrizhal"),
+    (
+        "Enter",
+        "Do what the focused row's button says (Resume, Open or Install…)",
+    ),
+    (
+        "Alt+1 … Alt+5",
+        "The same for Sputnik, Pereplyot, Kartoteka, Zerkalo, Skrizhal",
+    ),
     ("N", "Leave yourself a note on the focused row"),
     ("W", "What's new in the focused row's app"),
     ("Ctrl+K", "Search the suite"),

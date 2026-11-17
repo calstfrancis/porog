@@ -7,8 +7,8 @@ mod changelog;
 mod install;
 mod menu;
 mod news;
-mod portal;
 mod now_area;
+mod portal;
 mod row;
 mod search;
 mod shortcuts;
@@ -41,7 +41,10 @@ fn main() -> glib::ExitCode {
         .build();
     app.connect_startup(|app| {
         load_css();
-        app.set_accels_for_action("win.shortcuts", &["<Control>question", "<Control><Shift>slash"]);
+        app.set_accels_for_action(
+            "win.shortcuts",
+            &["<Control>question", "<Control><Shift>slash"],
+        );
         // Alt+1…5 open the five apps, in row order.
         for index in 0..APPS.len() {
             app.set_accels_for_action(
@@ -58,7 +61,11 @@ fn main() -> glib::ExitCode {
     // GLib does not allow an optional value on a string option, so the search box with
     // nothing typed is its own flag.
     for (name, help, arg) in [
-        ("resume", "Do what an app's row button says: Resume or Open", "APP"),
+        (
+            "resume",
+            "Do what an app's row button says: Resume or Open",
+            "APP",
+        ),
         ("open", "Open an app plainly", "APP"),
         ("search", "Search the suite for WORDS", "WORDS"),
     ] {
