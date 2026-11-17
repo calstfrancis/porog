@@ -20,7 +20,7 @@ use crate::window::launch;
 /// How long typing must pause before the apps are asked: each question starts a process.
 const PAUSE_MS: u32 = 450;
 
-pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
+pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: &str) {
     let entry = gtk::SearchEntry::builder()
         .placeholder_text("Search the suite")
         .hexpand(true)
@@ -185,6 +185,11 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
 
     window.present();
     entry.grab_focus();
+    // Words given up front (`porog --search=WORDS`) are asked at once.
+    if !query.trim().is_empty() {
+        entry.set_text(query.trim());
+        entry.set_position(-1);
+    }
 }
 
 fn clear(list: &gtk::ListBox) {

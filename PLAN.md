@@ -347,7 +347,7 @@ what they are; Porog shows them (P2).
 ### Phase 11 — Reach Porog from outside its window (Cal, 2026-11-17)
 No GNOME Shell search provider: Cal does not use Activities search (D13).
 
-- [ ] **System tray icon, off by default.** A menu switch "Show in system tray", saved in
+- [x] **System tray icon, off by default.** A menu switch "Show in system tray", saved in
       `config.json` (`tray: bool`).
       - Built on StatusNotifierItem (the `ksni` crate, on its own thread, talking to the GTK side
         through a channel). The icon is Porog's own and never changes (P5).
@@ -363,7 +363,7 @@ No GNOME Shell search provider: Cal does not use Activities search (D13).
         switch still works once the extension is there.
       - Manifest: `--talk-name=org.kde.StatusNotifierWatcher` and
         `--own-name=org.kde.StatusNotifierItem-*`.
-- [ ] **Command line:** `porog --resume=APP`, `porog --open=APP` and `porog --search[=WORDS]`,
+- [x] **Command line:** `porog --resume=APP`, `porog --open=APP`, `porog --search=WORDS` and `porog --search-box` (GLib gives a string option no optional value, so the empty search is its own flag),
       handed to the running Porog if there is one (GApplication command-line handling), with
       APP the status name (`zerkalo`). The README shows how to bind one to a GNOME keyboard
       shortcut (`flatpak run io.github.calstfrancis.Porog --resume=zerkalo`).

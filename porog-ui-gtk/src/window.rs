@@ -13,6 +13,7 @@ use porog_core::{App, APPS};
 
 use crate::now_area::NowArea;
 use crate::row::AppRow;
+use crate::tray::{self, Line, Tray, TrayCmd};
 use crate::{changelog, menu, search, welcome, VERSION};
 
 /// Start `app` off the main thread, and say so plainly if it does not start.
@@ -84,6 +85,42 @@ fn open_dropped(files: &[gio::File], toasts: &adw::ToastOverlay) {
     });
 }
 
+/// While the tray is on and the window is not being looked at, re-read the rows when an app
+/// writes its status file, so the tray menu is never a stale answer. Never while the window is
+/// active: nothing changes under the user's eyes (`PLAN.md` P4).
+fn watch_status_dir(window: &adw::ApplicationWindow, rows: &Rc<Vec<AppRow>>, tray: &Rc<Tray>) {
+    let Some(dir) = porog_core::status::status_dir() else {
+        return;
+    };
+    let _ = std::fs::create_dir_all(&dir);
+    let Ok(monitor) = gio::File::for_path(&dir)
+        .monitor_directory(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE)
+    else {
+        return;
+    };
+    let pending = Rc::new(Cell::new(false));
+    monitor.connect_changed({
+        let window = window.clone();
+        let rows = rows.clone();
+        let tray = tray.clone();
+        move |_, _, _, _| {
+            if !tray.is_on() || window.is_active() || pending.replace(true) {
+                return;
+            }
+            let rows = rows.clone();
+            let pending = pending.clone();
+            glib::timeout_add_local_once(std::time::Duration::from_millis(500), move || {
+                pending.set(false);
+                rows.iter().for_each(AppRow::refresh);
+            });
+        }
+    });
+    // The monitor lives as long as the window.
+    window.connect_destroy(move |_| {
+        let _ = &monitor;
+    });
+}
+
 /// Mark a status-bar word toggle on or off: weight for the eye, pressed state for a
 /// screen reader.
 fn set_toggle(button: &gtk::Button, on: bool) {
@@ -126,6 +163,20 @@ pub fn build(app: &adw::Application) {
             })
             .collect(),
     );
+
+    let tray = Tray::new(app.upcast_ref());
+    let lines: Rc<dyn Fn() -> Vec<Line>> = {
+        let rows = rows.clone();
+        Rc::new(move || rows.iter().map(AppRow::tray_line).collect())
+    };
+    // The tray menu follows the rows: whenever one is re-read, the menu is rewritten.
+    for row in rows.iter() {
+        row.on_change({
+            let tray = tray.clone();
+            let lines = lines.clone();
+            move || tray.update(lines())
+        });
+    }
 
     let (now_card, now_area) = NowArea::new(&toasts, details.clone());
     let details_toggle = gtk::Button::builder()
@@ -221,7 +272,7 @@ pub fn build(app: &adw::Application) {
         .application(app)
         .title("Porog")
         .default_width(560)
-        .default_height(560)
+        .default_height(680)
         .content(&view)
         .build();
     menu_button.set_popover(Some(&menu::build(
@@ -229,6 +280,8 @@ pub fn build(app: &adw::Application) {
         &toasts,
         config.clone(),
         config_path.clone(),
+        tray.clone(),
+        lines.clone(),
     )));
 
     // One action does what a row's button says, by row index: the buttons, Enter on a row
@@ -251,6 +304,7 @@ pub fn build(app: &adw::Application) {
     };
     let open_app = row_action("open-app", AppRow::activate);
     row_action("open-plain", AppRow::open_plain);
+    let open_fresh = row_action("open-app-now", AppRow::activate_fresh);
     row_action("app-news", AppRow::show_news);
     list.connect_row_activated(move |_, row| open_app.activate(Some(&row.index().to_variant())));
 
@@ -264,9 +318,20 @@ pub fn build(app: &adw::Application) {
     search.connect_activate({
         let window = window.clone();
         let toasts = toasts.clone();
-        move |_, _| search::show(&window, &toasts)
+        move |_, _| search::show(&window, &toasts, "")
     });
     window.add_action(&search);
+    // Search with the words already typed, for `porog --search=WORDS`.
+    let search_for = gio::SimpleAction::new("search-for", Some(glib::VariantTy::STRING));
+    search_for.connect_activate({
+        let window = window.clone();
+        let toasts = toasts.clone();
+        move |_, words| {
+            let words = words.and_then(|w| w.get::<String>()).unwrap_or_default();
+            search::show(&window, &toasts, &words)
+        }
+    });
+    window.add_action(&search_for);
     app.set_accels_for_action("win.search", &["<Control>k"]);
     let whats_new = gio::SimpleAction::new("whats-new", None);
     whats_new.connect_activate({
@@ -282,12 +347,46 @@ pub fn build(app: &adw::Application) {
     window.add_action(&show_about);
 
     // Rows are refreshed when the window gains focus, never while it is being looked at.
-    window.connect_is_active_notify(move |window| {
-        if window.is_active() {
-            now_area.refresh();
-            rows.iter().for_each(AppRow::refresh);
+    window.connect_is_active_notify({
+        let rows = rows.clone();
+        move |window| {
+            if window.is_active() {
+                now_area.refresh();
+                rows.iter().for_each(AppRow::refresh);
+            }
         }
     });
+    // The tray: its menu clicks come back here, the icon is made when the choice is on, and
+    // while it is on closing the window only hides it.
+    tray::set_handler({
+        let window = window.clone();
+        let app = app.clone();
+        move |cmd| match cmd {
+            TrayCmd::Show => window.present(),
+            TrayCmd::Row(index) => open_fresh.activate(Some(&(index as i32).to_variant())),
+            TrayCmd::Search => {
+                window.present();
+                gio::prelude::ActionGroupExt::activate_action(&window, "search", None);
+            }
+            TrayCmd::Quit => app.quit(),
+        }
+    });
+    window.connect_close_request({
+        let tray = tray.clone();
+        move |window| {
+            if tray.is_on() {
+                window.set_visible(false);
+                glib::Propagation::Stop
+            } else {
+                glib::Propagation::Proceed
+            }
+        }
+    });
+    if config.borrow().tray {
+        menu::set_tray(true, &tray, &*lines, &config, &config_path, &toasts);
+    }
+    watch_status_dir(&window, &rows, &tray);
+
     // Start on the first row, so Enter and the arrow keys work at once.
     if let Some(first) = list.row_at_index(0) {
         GtkWindowExt::set_focus(&window, Some(&first));

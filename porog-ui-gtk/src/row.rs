@@ -16,6 +16,9 @@ use porog_core::App;
 use crate::menu;
 use crate::window::launch_then;
 
+/// What runs after a refresh, if anything.
+type ChangedHook = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+
 /// The parts of an app's row that change after it is built.
 #[derive(Clone)]
 pub(crate) struct AppRow {
@@ -43,6 +46,8 @@ pub(crate) struct AppRow {
     /// True from a press until the app is running or has failed, so a second press (or
     /// Alt+N, or Enter) cannot start it twice.
     starting: Rc<Cell<bool>>,
+    /// Called after a refresh puts new state on the row (the tray menu follows the rows).
+    changed: ChangedHook,
 }
 
 impl AppRow {
@@ -138,6 +143,7 @@ impl AppRow {
             details,
             toasts: toasts.clone(),
             starting: Rc::default(),
+            changed: Rc::default(),
         };
         row.show_note(&note_display(&config.borrow(), app));
         row.show(RowState {
@@ -147,22 +153,53 @@ impl AppRow {
         (widget, row)
     }
 
+    /// Re-read the row's state off the main thread.
+    async fn fetch_state(&self) -> RowState {
+        let app = self.app;
+        gio::spawn_blocking(move || {
+            status::row_state(
+                app,
+                status::status_dir().as_deref(),
+                porog_core::in_flatpak_sandbox(),
+            )
+        })
+        .await
+        .unwrap_or_default()
+    }
+
     /// Re-read the row's state off the main thread, then show it.
     pub(crate) fn refresh(&self) {
         let row = self.clone();
         glib::spawn_future_local(async move {
-            let app = row.app;
-            let state = gio::spawn_blocking(move || {
-                status::row_state(
-                    app,
-                    status::status_dir().as_deref(),
-                    porog_core::in_flatpak_sandbox(),
-                )
-            })
-            .await
-            .unwrap_or_default();
+            let state = row.fetch_state().await;
             row.show(state);
+            let changed = row.changed.borrow().clone();
+            if let Some(changed) = changed {
+                changed();
+            }
         });
+    }
+
+    /// Read the state afresh, then do what the button says: for a request that arrives before
+    /// the row has ever been read (the tray menu, `--resume` on a first launch).
+    pub(crate) fn activate_fresh(&self) {
+        let row = self.clone();
+        glib::spawn_future_local(async move {
+            let state = row.fetch_state().await;
+            row.show(state);
+            row.activate();
+        });
+    }
+
+    /// Run `f` after each refresh.
+    pub(crate) fn on_change(&self, f: impl Fn() + 'static) {
+        *self.changed.borrow_mut() = Some(Rc::new(f));
+    }
+
+    /// This row's line in the tray menu.
+    pub(crate) fn tray_line(&self) -> crate::tray::Line {
+        let (text, enabled) = status::tray_line(self.app, &self.state.borrow());
+        crate::tray::Line { text, enabled }
     }
 
     /// Put `state` on the row. The button says Resume only when the first entry can be

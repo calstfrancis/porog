@@ -25,6 +25,24 @@ The menu (top right) has the System / Light / Dark theme choice, the changelog a
 The version number at the bottom right also opens the changelog. The theme choice is kept
 in `~/.config/porog/config.json`.
 
+## From the tray and the command line
+
+*Show in system tray* in the menu (off by default) keeps an icon with Show Porog, a line per app
+("Resume Zerkalo — essay-2.typ" or "Open Kartoteka"), Search… and Quit. While it is on, closing the window
+hides it and Porog keeps running. GNOME shows tray icons only with the AppIndicator extension.
+
+```sh
+porog --resume=zerkalo   # what the Zerkalo row's button says: Resume or Open
+porog --open=kartoteka   # open the app plainly
+porog --search=grace     # search the suite for "grace"
+porog --search-box       # open the search box
+```
+
+The app is named as in its status file: `sputnik`, `pereplyot`, `kartoteka`, `zerkalo`, `skrizhal`. To bind
+one to a key in GNOME: Settings → Keyboard → Custom Shortcuts → command
+`flatpak run io.github.calstfrancis.Porog --resume=zerkalo`. A request for a row does not raise an
+existing Porog window; the point is to get to the app.
+
 ## Where the rows come from
 
 Each app writes `~/.local/share/fond/status/<app>.json` (the `fond-status` crate in

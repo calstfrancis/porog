@@ -12,6 +12,8 @@ use libadwaita as adw;
 
 use porog_core::config::{Config, Theme};
 
+use crate::tray::{Line, Tray};
+
 /// A flat, left-aligned popover row — same shape as every other Fond app's helper of the
 /// same name.
 fn popover_button(label: &str) -> gtk::Button {
@@ -30,6 +32,9 @@ fn popover_separator() -> gtk::Separator {
     sep.set_margin_bottom(4);
     sep
 }
+
+const TRAY_NOTE: &str = "An icon with Resume and Open for each app. Closing the window then keeps Porog running.";
+const TRAY_NO_HOST: &str = "Your desktop shows no tray icons. On GNOME, install the AppIndicator extension. Closing the window then keeps Porog running.";
 
 pub fn apply_theme(theme: Theme) {
     adw::StyleManager::default().set_color_scheme(match theme {
@@ -57,11 +62,41 @@ pub fn save_config(
     });
 }
 
+/// Turn the tray icon on or off and keep the choice, saying so if it cannot be done.
+pub fn set_tray(
+    on: bool,
+    tray: &Rc<Tray>,
+    lines: &dyn Fn() -> Vec<Line>,
+    config: &Rc<RefCell<Config>>,
+    config_path: &Path,
+    toasts: &adw::ToastOverlay,
+) {
+    if on {
+        let failed_toasts = toasts.clone();
+        let failed_config = config.clone();
+        tray.start(lines(), move || {
+            failed_config.borrow_mut().tray = false;
+            failed_toasts.add_toast(adw::Toast::new("Porog could not put an icon in the tray."));
+        });
+    } else {
+        tray.stop();
+    }
+    config.borrow_mut().tray = on;
+    save_config(
+        config,
+        config_path,
+        toasts,
+        "The tray choice could not be saved. It lasts until Porog closes.",
+    );
+}
+
 pub fn build(
     window: &adw::ApplicationWindow,
     toasts: &adw::ToastOverlay,
     config: Rc<RefCell<Config>>,
     config_path: PathBuf,
+    tray: Rc<Tray>,
+    lines: Rc<dyn Fn() -> Vec<Line>>,
 ) -> gtk::Popover {
     let current = config.borrow().theme;
     let rows = gtk::Box::new(gtk::Orientation::Vertical, 2);
@@ -114,6 +149,54 @@ pub fn build(
             );
         });
     }
+    rows.append(&popover_separator());
+
+    // The tray icon: a word that is bold when on, like the status bar's toggles, and under it
+    // what it does, or why it will not show.
+    let tray_row = popover_button("Show in system tray");
+    if config.borrow().tray {
+        tray_row.add_css_class("fond-toggle-active");
+    }
+    let tray_note = gtk::Label::builder()
+        .label(TRAY_NOTE)
+        .xalign(0.0)
+        .wrap(true)
+        .max_width_chars(28)
+        .margin_start(10)
+        .margin_end(10)
+        .css_classes(["caption", "fond-quiet"])
+        .build();
+    tray_row.connect_clicked({
+        let config = config.clone();
+        let config_path = config_path.clone();
+        let toasts = toasts.clone();
+        let tray = tray.clone();
+        let lines = lines.clone();
+        move |row| {
+            let on = !config.borrow().tray;
+            if on {
+                row.add_css_class("fond-toggle-active");
+            } else {
+                row.remove_css_class("fond-toggle-active");
+            }
+            set_tray(on, &tray, &*lines, &config, &config_path, &toasts);
+        }
+    });
+    // Whether anything is watching for tray icons is asked each time the menu opens.
+    popover.connect_show({
+        let tray_note = tray_note.clone();
+        move |_| {
+            let tray_note = tray_note.clone();
+            glib::spawn_future_local(async move {
+                let present = gio::spawn_blocking(crate::tray::host_present)
+                    .await
+                    .unwrap_or(false);
+                tray_note.set_label(if present { TRAY_NOTE } else { TRAY_NO_HOST });
+            });
+        }
+    });
+    rows.append(&tray_row);
+    rows.append(&tray_note);
     rows.append(&popover_separator());
 
     let whats_new = popover_button("What's New");

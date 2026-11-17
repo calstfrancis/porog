@@ -96,6 +96,20 @@ fn path_exists(path: &str, sandboxed: bool) -> bool {
         .unwrap_or(false)
 }
 
+/// One app's line in the tray menu, in the same words and by the same rule as its row's
+/// button (`PLAN.md` P3): "Resume Zerkalo — essay-2.typ" when the row would say Resume, else
+/// "Open Zerkalo". The flag says whether the line can be used: an app that is not installed
+/// reads "Zerkalo is not installed" and is greyed out.
+pub fn tray_line(app: &App, state: &RowState) -> (String, bool) {
+    if !state.installed {
+        return (format!("{} is not installed", app.name), false);
+    }
+    match state.resume.first() {
+        Some(first) => (format!("Resume {} — {}", app.name, first.title.trim()), true),
+        None => (format!("Open {}", app.name), true),
+    }
+}
+
 /// A moment with its UTC offset: what "today" and "yesterday" are measured from.
 pub type Now = DateTime<FixedOffset>;
 
@@ -166,6 +180,26 @@ mod tests {
         let kept = usable(entries, |path| path == "/tmp/example/here.pdf");
         let titles: Vec<_> = kept.iter().map(|e| e.title.as_str()).collect();
         assert_eq!(titles, ["here.pdf", "By key"]);
+    }
+
+    #[test]
+    fn the_tray_says_what_the_rows_button_says() {
+        let app = &crate::APPS[3];
+        let mut state = RowState {
+            installed: true,
+            ..RowState::default()
+        };
+        assert_eq!(tray_line(app, &state), ("Open Zerkalo".to_string(), true));
+        state.resume = vec![entry(" essay-2.typ ", &["/tmp/example/essay-2.typ"])];
+        assert_eq!(
+            tray_line(app, &state),
+            ("Resume Zerkalo — essay-2.typ".to_string(), true)
+        );
+        state.installed = false;
+        assert_eq!(
+            tray_line(app, &state),
+            ("Zerkalo is not installed".to_string(), false)
+        );
     }
 
     #[test]

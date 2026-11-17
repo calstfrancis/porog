@@ -3,6 +3,14 @@
 ## [Unreleased]
 
 ### Added
+- **A system tray icon, if you want one.** The menu's *Show in system tray* puts Porog's icon in the tray. Its
+  menu is Show Porog, one line per app saying what the row's button says ("Resume Zerkalo — essay-2.typ"),
+  Search… and Quit. With the icon on, closing the window only hides it and Porog keeps running; turning it off
+  restores quit-on-close. Off by default. GNOME shows tray icons only with the AppIndicator extension; the menu
+  says so when none is found.
+- **Reach a row from the keyboard or a script.** `porog --resume=zerkalo` does what that row's button says,
+  `--open=zerkalo` opens the app plainly, `--search=WORDS` asks the suite and `--search-box` opens the search
+  box. Bind one to a shortcut in GNOME Settings (see the README). It does not raise an existing Porog window.
 - **What's new in each app, from its row.** A small icon beside each app's note pencil opens that app's What's
   New in a Porog window: the newest release's name and what changed, in the app's own words. The icon is the
   same on every row and never shows a dot or a count. Needs each app's next release; an older one says so,

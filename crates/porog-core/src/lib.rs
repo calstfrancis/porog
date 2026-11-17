@@ -4,6 +4,7 @@
 //! start as a program, the same relationship Kartoteka and Sputnik have with Pereplyot. Every
 //! function here that runs a command blocks, so the UI calls them from a worker thread.
 
+pub mod cli;
 pub mod config;
 pub mod helper;
 pub mod now;

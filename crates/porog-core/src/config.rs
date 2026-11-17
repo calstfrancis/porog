@@ -68,6 +68,9 @@ pub struct Config {
     pub theme: Theme,
     /// Whether each row lists its last three resume entries instead of one.
     pub details: bool,
+    /// Whether Porog keeps an icon in the system tray, and keeps running when its window is
+    /// closed. Off by default.
+    pub tray: bool,
     /// The version whose Welcome / What's New window was last shown; empty on a first run.
     pub last_seen_version: String,
     /// One line the user left for themselves per app, keyed by the app's status name

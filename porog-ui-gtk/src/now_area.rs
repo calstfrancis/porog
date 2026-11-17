@@ -215,7 +215,6 @@ impl NowArea {
                 .label(&text)
                 .tooltip_text(&text)
                 .xalign(0.0)
-                .hexpand(true)
                 .ellipsize(gtk::pango::EllipsizeMode::End)
                 .css_classes(["fond-row-detail"])
                 .build();
