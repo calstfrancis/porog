@@ -324,12 +324,12 @@ what they are; Porog shows them (P2).
 - Touches: Sputnik, perhaps Kartoteka, Porog.
 
 ### Phase 10 — Each app's What's New, from its row (Cal, 2026-11-17)
-- [ ] A small icon on every row, between the note pencil and the main button, opens that app's
+- [x] A small icon on every row, between the note pencil and the main button, opens that app's
       What's New in a Porog window: "What's new in Zerkalo 0.59.0 'Release Name'", then the
       headline-and-detail bullets, in the app's words. The icon is the same on every row and
       never changes: no dot, no badge, no "unread" state (P5, D14). Tooltip and accessible name:
       "What's new in Zerkalo". Insensitive when the app is not installed.
-- [ ] Asked for, like the Now card: each app ships `<app>-whats-new` (flatpak `--command`), which
+- [x] Asked for, like the Now card: each app ships `<app>-whats-new` (flatpak `--command`), which
       prints `{schema: 1, version, release_name?, items: [{headline, detail}]}` and exits, without
       opening a window (D12).
       - Zerkalo, Pereplyot, Sputnik: from the same list their own What's New window uses
@@ -338,10 +338,10 @@ what they are; Porog shows them (P2).
       - Kartoteka, Skrizhal (no What's New window): the newest `CHANGELOG.md` entry, embedded at
         build time, each `- **Headline.** detail` bullet as one item and any other bullet as a
         headline alone.
-- [ ] Porog: `porog-core/src/whats_new.rs` (types, parse, tests, using `helper::run`) and a window
+- [x] Porog: `porog-core/src/whats_new.rs` (types, parse, tests, using `helper::run`) and a window
       reusing `welcome.rs`'s bullet layout. An app too old to answer: "This Zerkalo is too old to
       show what's new here. Update Zerkalo to 0.X or later." (Phase 7's table.)
-- [ ] Porog's own row of icons stays as it is: its own What's New stays in the menu.
+- [x] Porog's own row of icons stays as it is: its own What's New stays in the menu.
 - Touches: all five apps, Porog.
 
 ### Phase 11 — Reach Porog from outside its window (Cal, 2026-11-17)

@@ -9,6 +9,7 @@ pub mod helper;
 pub mod now;
 pub mod search;
 pub mod status;
+pub mod whats_new;
 
 use std::io;
 use std::path::Path;
@@ -72,6 +73,8 @@ pub enum Feature {
     Now,
     /// The app's `<app>-search` helper.
     Search,
+    /// The app's `<app>-whats-new` helper.
+    WhatsNew,
 }
 
 /// The first release of each app that can answer each [`Feature`], by `status_name`. Checked

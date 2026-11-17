@@ -5,6 +5,7 @@
 
 mod changelog;
 mod menu;
+mod news;
 mod portal;
 mod now_area;
 mod row;

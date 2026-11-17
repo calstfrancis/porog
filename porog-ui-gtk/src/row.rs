@@ -23,6 +23,8 @@ pub(crate) struct AppRow {
     index: usize,
     /// The app's name. Always opens the app plainly, whatever the button says.
     name: gtk::Button,
+    /// Opens that app's What's New. The same icon on every row, whatever is in it.
+    news: gtk::Button,
     detail: gtk::Label,
     /// "Resume" when the row shows something that can be reopened, otherwise "Open".
     primary: gtk::Button,
@@ -84,6 +86,17 @@ impl AppRow {
             let _ = primary.activate_action("win.open-app", Some(&(index as i32).to_variant()));
         });
 
+        let news_hint = format!("What's new in {}", app.name);
+        let news = gtk::Button::builder()
+            .icon_name("help-about-symbolic")
+            .valign(gtk::Align::Center)
+            .tooltip_text(&news_hint)
+            .css_classes(["flat"])
+            .build();
+        news.update_property(&[gtk::accessible::Property::Label(&news_hint)]);
+        news.connect_clicked(move |news| {
+            let _ = news.activate_action("win.app-news", Some(&(index as i32).to_variant()));
+        });
         let (edit, note_line, note_text) = note_widgets(app, &name, config, config_path, toasts);
         let (context_line, context_text) = indented_line(&name, &["fond-row-detail"]);
 
@@ -91,6 +104,7 @@ impl AppRow {
         line.append(&name);
         line.append(&detail);
         line.append(&edit);
+        line.append(&news);
         line.append(&primary);
         let extras = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -112,6 +126,7 @@ impl AppRow {
             app,
             index,
             name,
+            news,
             detail,
             primary,
             extras,
@@ -202,6 +217,7 @@ impl AppRow {
         self.primary
             .update_property(&[gtk::accessible::Property::Label(&hint)]);
         self.name.set_sensitive(state.installed);
+        self.news.set_sensitive(state.installed);
 
         while let Some(child) = self.extras.first_child() {
             self.extras.remove(&child);
@@ -323,6 +339,13 @@ impl AppRow {
                 .set_label(if state.resume.is_empty() { "Open" } else { "Resume" });
             row.primary.set_sensitive(state.installed);
         });
+    }
+
+    /// Open this app's What's New window.
+    pub(crate) fn show_news(&self) {
+        if let Some(parent) = self.news.root().and_downcast::<gtk::Window>() {
+            crate::news::show(&parent, self.app);
+        }
     }
 
     fn say_not_installed(&self) {

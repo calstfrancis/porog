@@ -136,7 +136,7 @@ const TRY: &[(&str, &str)] = &[
     ("Press Ctrl+K", "Search all five apps from here."),
 ];
 
-fn section(text: &str) -> gtk::Label {
+pub(crate) fn section(text: &str) -> gtk::Label {
     let l = gtk::Label::new(Some(text));
     l.add_css_class("heading");
     l.set_xalign(0.0);
@@ -144,14 +144,14 @@ fn section(text: &str) -> gtk::Label {
     l
 }
 
-fn style(l: &gtk::Label) {
+pub(crate) fn style(l: &gtk::Label) {
     l.set_wrap(true);
     l.set_wrap_mode(gtk::pango::WrapMode::WordChar);
     l.set_xalign(0.0);
     l.set_hexpand(true);
 }
 
-fn bullet(headline: &str, detail: &str) -> gtk::Box {
+pub(crate) fn bullet(headline: &str, detail: &str) -> gtk::Box {
     let row = gtk::Box::new(gtk::Orientation::Horizontal, 8);
     let dot = gtk::Label::new(Some("•"));
     dot.add_css_class("dim-label");

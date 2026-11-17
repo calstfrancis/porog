@@ -251,6 +251,7 @@ pub fn build(app: &adw::Application) {
     };
     let open_app = row_action("open-app", AppRow::activate);
     row_action("open-plain", AppRow::open_plain);
+    row_action("app-news", AppRow::show_news);
     list.connect_row_activated(move |_, row| open_app.activate(Some(&row.index().to_variant())));
 
     let show_changelog = gio::SimpleAction::new("changelog", None);

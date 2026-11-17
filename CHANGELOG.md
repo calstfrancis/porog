@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **What's new in each app, from its row.** A small icon beside each app's note pencil opens that app's What's
+  New in a Porog window: the newest release's name and what changed, in the app's own words. The icon is the
+  same on every row and never shows a dot or a count. Needs each app's next release; an older one says so,
+  and which version to update to.
 - **Where you were, in a line.** Under a row's entry, one dim line from the work itself when the app gives
   one: Zerkalo's heading and the sentence you were in, Pereplyot's newest highlight. With `details` on the
   older entries show theirs too. Needs the next Zerkalo and Pereplyot.
