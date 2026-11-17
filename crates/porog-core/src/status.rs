@@ -145,6 +145,7 @@ mod tests {
             title: title.to_string(),
             detail: None,
             at: None,
+            context: None,
             args: args.iter().map(|a| a.to_string()).collect(),
         }
     }

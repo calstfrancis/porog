@@ -283,19 +283,19 @@ you last marked) is a strong one: interruption research (Altmann & Trafton's mem
 model) finds that concrete cues from the task shorten the time to resume, and for an
 autistic or monotropic user, re-entry is the costly moment (§0).
 
-- [ ] `fond-status`: `ResumeEntry` gains an optional `context` (one line, at most 120
+- [x] `fond-status`: `ResumeEntry` gains an optional `context` (one line, at most 120
       characters, cut by the writer). An additive field, so no schema bump. Tests for the round
       trip and for a file without it.
-- [ ] Zerkalo writes `context` for the document in front: the nearest heading above the cursor,
+- [x] Zerkalo writes `context` for the document in front: the nearest heading above the cursor,
       then the start of the sentence the cursor is in, e.g. `§2 Method · "…the second argument
       fails because"`. Written whenever it already writes the status file; no extra writes.
       Quotes from the document are fine (D9).
-- [ ] Pereplyot writes `context`: the text of the newest highlight in that document, or else the
+- [x] Pereplyot writes `context`: the text of the newest highlight in that document, or else the
       chapter or section title at the current position.
-- [ ] Porog shows `context` as one dim line under the first entry, ellipsized, always (it is part
+- [x] Porog shows `context` as one dim line under the first entry, ellipsized, always (it is part
       of the one item, not another item, so P6 holds), and under each older entry with `details`
       on. The Resume button's tooltip carries it too.
-- [ ] **Notes carry their date.** A note shows "· left 3 Nov" after it, in the same words as the
+- [x] **Notes carry their date.** A note shows "· left 3 Nov" after it, in the same words as the
       row times (`status::describe_when`). Notes stay per app (D11): the row is the place that
       never moves, while a note tied to one document would vanish from view as soon as another
       document came first, which is when it is needed. Config: `notes` becomes `{text, at}` per

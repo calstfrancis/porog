@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+- **Where you were, in a line.** Under a row's entry, one dim line from the work itself when the app gives
+  one: Zerkalo's heading and the sentence you were in, Pereplyot's newest highlight. With `details` on the
+  older entries show theirs too. Needs the next Zerkalo and Pereplyot.
+- **Notes show when they were left** ("next: rewrite the intro · left 3 Nov"), so you can tell how old one is
+  without anything telling you it is old. Notes written before this have no date and show as before.
+
 ### Changed
 - **A button shows it was pressed.** Resume, Open and the Now card's buttons read "Starting…" and ignore
   further presses until the app is running (at most three seconds). If the app exits with an error in that

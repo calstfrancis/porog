@@ -28,6 +28,10 @@ pub(crate) struct AppRow {
     primary: gtk::Button,
     /// The second and third resume entries, shown only with `details` on.
     extras: gtk::Box,
+    /// One line from the work itself ("Method · "…the second argument fails because""), under
+    /// the first entry; hidden when the app gave none.
+    context_line: gtk::Box,
+    context_text: gtk::Label,
     /// The note the user left for this app, under the first entry; hidden when there is none.
     note_line: gtk::Box,
     note_text: gtk::Label,
@@ -81,6 +85,7 @@ impl AppRow {
         });
 
         let (edit, note_line, note_text) = note_widgets(app, &name, config, config_path, toasts);
+        let (context_line, context_text) = indented_line(&name, &["fond-row-detail"]);
 
         let line = gtk::Box::new(gtk::Orientation::Horizontal, 12);
         line.append(&name);
@@ -94,6 +99,7 @@ impl AppRow {
             .build();
         let content = gtk::Box::new(gtk::Orientation::Vertical, 4);
         content.append(&line);
+        content.append(&context_line);
         content.append(&note_line);
         content.append(&extras);
         let widget = gtk::ListBoxRow::builder()
@@ -109,6 +115,8 @@ impl AppRow {
             detail,
             primary,
             extras,
+            context_line,
+            context_text,
             note_line,
             note_text,
             state: Rc::default(),
@@ -116,7 +124,7 @@ impl AppRow {
             toasts: toasts.clone(),
             starting: Rc::default(),
         };
-        row.show_note(config.borrow().note(app));
+        row.show_note(&note_display(&config.borrow(), app));
         row.show(RowState {
             installed: true,
             ..RowState::default()
@@ -171,6 +179,20 @@ impl AppRow {
         };
         self.detail.set_label(&text);
         self.detail.set_tooltip_text(Some(&text));
+        let context = state
+            .resume
+            .first()
+            .filter(|_| state.installed)
+            .and_then(|first| first.context.as_deref())
+            .unwrap_or("");
+        self.context_text.set_label(context);
+        self.context_text.set_tooltip_text(Some(context));
+        self.context_line.set_visible(!context.is_empty());
+        let hint = if context.is_empty() {
+            hint
+        } else {
+            format!("{hint}: {context}")
+        };
         if !self.starting.get() {
             self.primary.set_label(label);
             self.primary.set_sensitive(state.installed);
@@ -236,7 +258,17 @@ impl AppRow {
         line.append(&indent);
         line.append(&label);
         line.append(&resume);
-        line
+        let Some(context) = entry.context.as_deref().filter(|c| !c.trim().is_empty()) else {
+            return line;
+        };
+        let (context_line, context_text) = indented_line(&self.name, &["fond-row-detail"]);
+        context_text.set_label(context);
+        context_text.set_tooltip_text(Some(context));
+        context_line.set_visible(true);
+        let both = gtk::Box::new(gtk::Orientation::Vertical, 2);
+        both.append(&line);
+        both.append(&context_line);
+        both
     }
 
     /// Put the user's own note for this app under its first entry, or hide the line.
@@ -301,6 +333,41 @@ impl AppRow {
     }
 }
 
+/// A line of text under a row's first entry: an empty box as wide as the app's name, so the
+/// text starts under the entry's own, and the label beside it. Hidden until it has text.
+fn indented_line(name: &gtk::Button, classes: &[&str]) -> (gtk::Box, gtk::Label) {
+    let indent = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    let widths = gtk::SizeGroup::new(gtk::SizeGroupMode::Horizontal);
+    widths.add_widget(name);
+    widths.add_widget(&indent);
+    let text = gtk::Label::builder()
+        .xalign(0.0)
+        .hexpand(true)
+        .ellipsize(gtk::pango::EllipsizeMode::End)
+        .css_classes(classes.to_vec())
+        .build();
+    let line = gtk::Box::builder().spacing(12).visible(false).build();
+    line.append(&indent);
+    line.append(&text);
+    (line, text)
+}
+
+/// The note as the row shows it: its words, then when it was left ("next: the intro · left
+/// 3 Nov") so it can be judged by its age without anything telling the user it is old.
+fn note_display(config: &Config, app: &App) -> String {
+    let note = config.note(app);
+    if note.is_empty() {
+        return String::new();
+    }
+    match config
+        .note_at(app)
+        .and_then(|at| status::describe_when(at, status::now()))
+    {
+        Some(when) => format!("{note} · left {when}"),
+        None => note.to_string(),
+    }
+}
+
 /// The note button on a row, the line that shows its note, and the label inside that line.
 ///
 /// The button opens a small box holding one line of text: Enter keeps it, an empty line
@@ -361,7 +428,7 @@ fn note_widgets(
         let line = line.clone();
         move |entry| {
             config.borrow_mut().set_note(app, &entry.text());
-            let note = config.borrow().note(app).to_string();
+            let note = note_display(&config.borrow(), app);
             text.set_label(&note);
             text.set_tooltip_text(Some(&note));
             line.set_visible(!note.is_empty());
