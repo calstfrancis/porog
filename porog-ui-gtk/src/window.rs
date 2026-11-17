@@ -1,7 +1,6 @@
-//! The main window: the five fixed app rows and the status bar.
+//! The main window: the Now area, the five fixed app rows and the status bar.
 
 use std::cell::{Cell, RefCell};
-use std::path::Path;
 use std::rc::Rc;
 
 use adw::prelude::*;
@@ -9,523 +8,30 @@ use gtk::{gio, glib};
 use gtk4 as gtk;
 use libadwaita as adw;
 
-use porog_core::config::{Config, NOTE_MAX};
-use porog_core::now::{self, LaterItem, NowView};
-use porog_core::status::{self, ResumeEntry, RowState};
+use porog_core::config::Config;
 use porog_core::{App, APPS};
 
+use crate::now_area::NowArea;
+use crate::row::AppRow;
 use crate::{changelog, menu, search, welcome, VERSION};
-
-/// The parts of an app's row that change after it is built.
-#[derive(Clone)]
-struct AppRow {
-    app: &'static App,
-    index: usize,
-    /// The app's name. Always opens the app plainly, whatever the button says.
-    name: gtk::Button,
-    detail: gtk::Label,
-    /// "Resume" when the row shows something that can be reopened, otherwise "Open".
-    primary: gtk::Button,
-    /// The second and third resume entries, shown only with `details` on.
-    extras: gtk::Box,
-    /// The note the user left for this app, under the first entry; hidden when there is none.
-    note_line: gtk::Box,
-    note_text: gtk::Label,
-    state: Rc<RefCell<RowState>>,
-    details: Rc<Cell<bool>>,
-    toasts: adw::ToastOverlay,
-}
-
-impl AppRow {
-    fn new(
-        app: &'static App,
-        index: usize,
-        details: Rc<Cell<bool>>,
-        toasts: &adw::ToastOverlay,
-        config: &Rc<RefCell<Config>>,
-        config_path: &Path,
-    ) -> (gtk::ListBoxRow, Self) {
-        let name_label = gtk::Label::builder()
-            .label(app.name)
-            .xalign(0.0)
-            .width_chars(10)
-            .css_classes(["fond-row-title"])
-            .build();
-        let name = gtk::Button::builder()
-            .child(&name_label)
-            .valign(gtk::Align::Center)
-            .tooltip_text(format!("Open {}", app.name))
-            .css_classes(["flat", "porog-name"])
-            .build();
-        name.connect_clicked(move |name| {
-            let _ = name.activate_action("win.open-plain", Some(&(index as i32).to_variant()));
-        });
-        let detail = gtk::Label::builder()
-            .label(app.purpose)
-            .xalign(0.0)
-            .hexpand(true)
-            .ellipsize(gtk::pango::EllipsizeMode::End)
-            .css_classes(["fond-row-detail"])
-            .build();
-        // A fixed width, so the text beside it does not shift when the label changes.
-        let primary = gtk::Button::builder()
-            .label("Open")
-            .valign(gtk::Align::Center)
-            .width_request(88)
-            .build();
-        primary.connect_clicked(move |primary| {
-            let _ = primary.activate_action("win.open-app", Some(&(index as i32).to_variant()));
-        });
-
-        let (edit, note_line, note_text) = note_widgets(app, &name, config, config_path, toasts);
-
-        let line = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-        line.append(&name);
-        line.append(&detail);
-        line.append(&edit);
-        line.append(&primary);
-        let extras = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
-            .spacing(4)
-            .visible(false)
-            .build();
-        let content = gtk::Box::new(gtk::Orientation::Vertical, 4);
-        content.append(&line);
-        content.append(&note_line);
-        content.append(&extras);
-        let widget = gtk::ListBoxRow::builder()
-            .child(&content)
-            .selectable(false)
-            .css_classes(["fond-row"])
-            .build();
-
-        let row = Self {
-            app,
-            index,
-            name,
-            detail,
-            primary,
-            extras,
-            note_line,
-            note_text,
-            state: Rc::default(),
-            details,
-            toasts: toasts.clone(),
-        };
-        row.show_note(config.borrow().note(app));
-        row.show(RowState {
-            installed: true,
-            ..RowState::default()
-        });
-        (widget, row)
-    }
-
-    /// Re-read the row's state off the main thread, then show it.
-    fn refresh(&self) {
-        let row = self.clone();
-        glib::spawn_future_local(async move {
-            let app = row.app;
-            let state = gio::spawn_blocking(move || {
-                status::row_state(
-                    app,
-                    status::status_dir().as_deref(),
-                    porog_core::in_flatpak_sandbox(),
-                )
-            })
-            .await
-            .unwrap_or_default();
-            row.show(state);
-        });
-    }
-
-    /// Put `state` on the row. The button says Resume only when the first entry can be
-    /// reopened; in every other case it says Open, and opens the app.
-    fn show(&self, state: RowState) {
-        let app = self.app;
-        let shortcut = format!("Alt+{}", self.index + 1);
-        let now = status::now();
-
-        let (text, label, hint) = match state.resume.first() {
-            _ if !state.installed => (
-                "Not installed".to_string(),
-                "Open",
-                format!("{} is not installed", app.name),
-            ),
-            Some(first) => (
-                status::describe(first, now),
-                "Resume",
-                format!("Resume {} in {}", first.title.trim(), app.name),
-            ),
-            None => (
-                state
-                    .summary
-                    .clone()
-                    .unwrap_or_else(|| app.purpose.to_string()),
-                "Open",
-                format!("Open {}", app.name),
-            ),
-        };
-        self.detail.set_label(&text);
-        self.detail.set_tooltip_text(Some(&text));
-        self.primary.set_label(label);
-        self.primary
-            .set_tooltip_text(Some(&format!("{hint} ({shortcut})")));
-        self.primary
-            .update_property(&[gtk::accessible::Property::Label(&hint)]);
-        self.primary.set_sensitive(state.installed);
-        self.name.set_sensitive(state.installed);
-
-        while let Some(child) = self.extras.first_child() {
-            self.extras.remove(&child);
-        }
-        if state.installed {
-            for entry in state.resume.iter().skip(1) {
-                self.extras.append(&self.extra_line(entry, now));
-            }
-        }
-        *self.state.borrow_mut() = state;
-        self.show_details();
-    }
-
-    /// One older resume entry: its text and its own Resume button.
-    fn extra_line(&self, entry: &ResumeEntry, now: status::Now) -> gtk::Box {
-        let text = status::describe(entry, now);
-        let label = gtk::Label::builder()
-            .label(&text)
-            .tooltip_text(&text)
-            .xalign(0.0)
-            .hexpand(true)
-            .ellipsize(gtk::pango::EllipsizeMode::End)
-            .css_classes(["fond-row-detail"])
-            .build();
-        let hint = format!("Resume {} in {}", entry.title.trim(), self.app.name);
-        let resume = gtk::Button::builder()
-            .label("Resume")
-            .valign(gtk::Align::Center)
-            .width_request(88)
-            .tooltip_text(&hint)
-            .css_classes(["flat"])
-            .build();
-        resume.update_property(&[gtk::accessible::Property::Label(&hint)]);
-        resume.connect_clicked({
-            let app = self.app;
-            let args = entry.args.clone();
-            let toasts = self.toasts.clone();
-            move |_| launch(app, args.clone(), &toasts)
-        });
-        // An empty box as wide as the app's name, so this text starts under the first entry's.
-        let indent = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        let widths = gtk::SizeGroup::new(gtk::SizeGroupMode::Horizontal);
-        widths.add_widget(&self.name);
-        widths.add_widget(&indent);
-        let line = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-        line.append(&indent);
-        line.append(&label);
-        line.append(&resume);
-        line
-    }
-
-    /// Put the user's own note for this app under its first entry, or hide the line.
-    fn show_note(&self, note: &str) {
-        self.note_text.set_label(note);
-        self.note_text.set_tooltip_text(Some(note));
-        self.note_line.set_visible(!note.is_empty());
-    }
-
-    /// Show or hide the older entries to match the `details` toggle.
-    fn show_details(&self) {
-        self.extras
-            .set_visible(self.details.get() && self.extras.first_child().is_some());
-    }
-
-    /// What the row's button does right now: Resume the first entry, or open the app.
-    fn activate(&self) {
-        let state = self.state.borrow();
-        if !state.installed {
-            self.say_not_installed();
-            return;
-        }
-        let args = state.resume.first().map(|entry| entry.args.clone());
-        launch(self.app, args.unwrap_or_default(), &self.toasts);
-    }
-
-    /// Open the app with nothing to resume.
-    fn open_plain(&self) {
-        if self.state.borrow().installed {
-            launch(self.app, Vec::new(), &self.toasts);
-        } else {
-            self.say_not_installed();
-        }
-    }
-
-    fn say_not_installed(&self) {
-        self.toasts.add_toast(adw::Toast::new(&format!(
-            "{} is not installed.",
-            self.app.name
-        )));
-    }
-}
-
-/// The note button on a row, the line that shows its note, and the label inside that line.
-///
-/// The button opens a small box holding one line of text: Enter keeps it, an empty line
-/// removes it. The note is the user's own words, kept in Porog's config and nowhere else.
-fn note_widgets(
-    app: &'static App,
-    name: &gtk::Button,
-    config: &Rc<RefCell<Config>>,
-    config_path: &Path,
-    toasts: &adw::ToastOverlay,
-) -> (gtk::MenuButton, gtk::Box, gtk::Label) {
-    let hint = format!("Leave yourself a note for {}", app.name);
-    let entry = gtk::Entry::builder()
-        .placeholder_text("e.g. next: rewrite the intro")
-        .max_length(NOTE_MAX as i32)
-        .width_chars(34)
-        .build();
-    entry.update_property(&[gtk::accessible::Property::Label(&hint)]);
-    let popover = gtk::Popover::builder().child(&entry).build();
-    let edit = gtk::MenuButton::builder()
-        .icon_name("document-edit-symbolic")
-        .valign(gtk::Align::Center)
-        .popover(&popover)
-        .tooltip_text(&hint)
-        .css_classes(["flat"])
-        .build();
-    edit.update_property(&[gtk::accessible::Property::Label(&hint)]);
-
-    // An empty box as wide as the app's name, so the note starts under the first entry's text.
-    let indent = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-    let widths = gtk::SizeGroup::new(gtk::SizeGroupMode::Horizontal);
-    widths.add_widget(name);
-    widths.add_widget(&indent);
-    let text = gtk::Label::builder()
-        .xalign(0.0)
-        .hexpand(true)
-        .ellipsize(gtk::pango::EllipsizeMode::End)
-        .css_classes(["fond-row-detail", "porog-note"])
-        .build();
-    let line = gtk::Box::builder().spacing(12).visible(false).build();
-    line.append(&indent);
-    line.append(&text);
-
-    popover.connect_show({
-        let entry = entry.clone();
-        let config = config.clone();
-        move |_| {
-            entry.set_text(config.borrow().note(app));
-            entry.grab_focus();
-        }
-    });
-    entry.connect_activate({
-        let popover = popover.clone();
-        let config = config.clone();
-        let config_path = config_path.to_path_buf();
-        let toasts = toasts.clone();
-        let text = text.clone();
-        let line = line.clone();
-        move |entry| {
-            config.borrow_mut().set_note(app, &entry.text());
-            let note = config.borrow().note(app).to_string();
-            text.set_label(&note);
-            text.set_tooltip_text(Some(&note));
-            line.set_visible(!note.is_empty());
-            popover.popdown();
-            menu::save_config(
-                &config,
-                &config_path,
-                &toasts,
-                "The note could not be saved. It lasts until Porog closes.",
-            );
-        }
-    });
-    (edit, line, text)
-}
-
-/// The Now area above the rows: Sputnik's Now card in Sputnik's words (`PLAN.md` P2). It
-/// keeps its height whatever it shows, so the rows below never move (P1).
-#[derive(Clone)]
-struct NowArea {
-    title: gtk::Label,
-    detail: gtk::Label,
-    footer: gtk::Label,
-    action: gtk::Button,
-    /// What the action button starts; set with each answer from Sputnik.
-    target: ActionTarget,
-    /// What is due next, in Sputnik's words; shown only with `details` on.
-    later: gtk::Box,
-    details: Rc<Cell<bool>>,
-}
-
-type ActionTarget = Rc<RefCell<Option<(&'static App, Vec<String>)>>>;
-
-impl NowArea {
-    fn new(toasts: &adw::ToastOverlay, details: Rc<Cell<bool>>) -> (gtk::Box, Self) {
-        let eyebrow = gtk::Label::builder()
-            .label("NOW  (from Sputnik)")
-            .xalign(0.0)
-            .css_classes(["caption-heading", "fond-quiet"])
-            .build();
-        let title = gtk::Label::builder()
-            .xalign(0.0)
-            .wrap(true)
-            .css_classes(["title-4"])
-            .build();
-        let detail = gtk::Label::builder()
-            .xalign(0.0)
-            .wrap(true)
-            .css_classes(["fond-row-detail"])
-            .build();
-        let footer = gtk::Label::builder()
-            .xalign(0.0)
-            .css_classes(["fond-row-detail"])
-            .build();
-        let text = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
-            .spacing(2)
-            .hexpand(true)
-            .build();
-        let later = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
-            .spacing(2)
-            .margin_top(6)
-            .visible(false)
-            .build();
-        for label in [&eyebrow, &title, &detail, &footer] {
-            text.append(label);
-        }
-        text.append(&later);
-        let open = gtk::Button::builder()
-            .label("Open Sputnik")
-            .valign(gtk::Align::Center)
-            .tooltip_text("Open Sputnik")
-            .action_name("win.open-plain")
-            .action_target(&0i32.to_variant())
-            .build();
-        let action = gtk::Button::builder()
-            .valign(gtk::Align::Center)
-            .visible(false)
-            .build();
-        let target = ActionTarget::default();
-        action.connect_clicked({
-            let target = target.clone();
-            let toasts = toasts.clone();
-            move |_| {
-                if let Some((app, args)) = target.borrow().clone() {
-                    launch(app, args, &toasts);
-                }
-            }
-        });
-        let line = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-        line.append(&text);
-        line.append(&action);
-        line.append(&open);
-        let card = gtk::Box::builder()
-            .height_request(104)
-            .margin_start(12)
-            .margin_end(12)
-            .margin_top(8)
-            .margin_bottom(8)
-            .build();
-        card.append(&line);
-        line.set_hexpand(true);
-        line.set_margin_start(12);
-        line.set_margin_end(12);
-        line.set_margin_top(8);
-        line.set_margin_bottom(8);
-        card.add_css_class("card");
-        let area = Self {
-            title,
-            detail,
-            footer,
-            action,
-            target,
-            later,
-            details,
-        };
-        area.show(&NowView::Message("Looking…".to_string()));
-        (card, area)
-    }
-
-    fn show(&self, view: &NowView) {
-        let (title, detail, footer, action, later) = match view {
-            NowView::Card {
-                title,
-                detail,
-                footer,
-                action,
-                later,
-            } => (
-                title.as_str(),
-                detail.as_str(),
-                footer.as_deref(),
-                action.as_ref(),
-                later.as_slice(),
-            ),
-            NowView::Message(message) => (message.as_str(), "", None, None, &[][..]),
-        };
-        self.show_later(later);
-        self.action.set_visible(action.is_some());
-        if let Some(action) = action {
-            self.action.set_label(&action.label);
-            self.action
-                .set_tooltip_text(Some(&format!("{} in {}", action.label, action.app.name)));
-        }
-        *self.target.borrow_mut() = action.map(|a| (a.app, a.args.clone()));
-        self.title.set_label(title);
-        self.detail.set_label(detail);
-        self.detail.set_visible(!detail.is_empty());
-        self.footer.set_label(footer.unwrap_or(""));
-        self.footer.set_visible(footer.is_some());
-    }
-
-    /// Replace the "what is due next" lines, one label each.
-    fn show_later(&self, later: &[LaterItem]) {
-        while let Some(child) = self.later.first_child() {
-            self.later.remove(&child);
-        }
-        for item in later {
-            let text = if item.detail.is_empty() {
-                item.title.clone()
-            } else {
-                format!("{} · {}", item.title, item.detail)
-            };
-            self.later.append(
-                &gtk::Label::builder()
-                    .label(&text)
-                    .tooltip_text(&text)
-                    .xalign(0.0)
-                    .wrap(true)
-                    .css_classes(["fond-row-detail"])
-                    .build(),
-            );
-        }
-        self.show_details();
-    }
-
-    /// Show or hide the "due next" lines to match the `details` toggle.
-    fn show_details(&self) {
-        self.later
-            .set_visible(self.details.get() && self.later.first_child().is_some());
-    }
-
-    /// Ask Sputnik again, off the main thread.
-    fn refresh(&self) {
-        let area = self.clone();
-        glib::spawn_future_local(async move {
-            let view = gio::spawn_blocking(now::fetch)
-                .await
-                .unwrap_or_else(|_| NowView::Message(now::NO_ANSWER.to_string()));
-            area.show(&view);
-        });
-    }
-}
 
 /// Start `app` off the main thread, and say so plainly if it does not start.
 pub fn launch(app: &'static App, args: Vec<String>, toasts: &adw::ToastOverlay) {
+    launch_then(app, args, toasts, || {});
+}
+
+/// Like [`launch`], and calls `done` on the main thread once the app is clearly running or has
+/// failed (within [`porog_core::LAUNCH_GRACE`]). A button uses it to show "Starting…" meanwhile.
+pub fn launch_then(
+    app: &'static App,
+    args: Vec<String>,
+    toasts: &adw::ToastOverlay,
+    done: impl FnOnce() + 'static,
+) {
     let toasts = toasts.clone();
     glib::spawn_future_local(async move {
         let started = gio::spawn_blocking(move || porog_core::launch(app, &args)).await;
+        done();
         if !matches!(started, Ok(Ok(()))) {
             toasts.add_toast(adw::Toast::new(&format!("{} did not start.", app.name)));
         }
@@ -545,18 +51,37 @@ fn open_dropped(files: &[gio::File], toasts: &adw::ToastOverlay) {
         ));
         return;
     };
-    match porog_core::app_for_file(&path) {
-        Some(app) => launch(app, vec![path.to_string_lossy().into_owned()], toasts),
-        None => {
-            let name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default();
-            toasts.add_toast(adw::Toast::new(&format!(
-                "Porog cannot open {name}. It handles PDF, EPUB and .typ files."
-            )));
+    let Some(app) = porog_core::app_for_file(&path) else {
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        toasts.add_toast(adw::Toast::new(&format!(
+            "Porog cannot open {name}. It handles PDF, EPUB and .typ files."
+        )));
+        return;
+    };
+    let toasts = toasts.clone();
+    glib::spawn_future_local(async move {
+        // In the sandbox the path is the portal's; the app needs the real one.
+        let sandboxed = porog_core::in_flatpak_sandbox();
+        let real = gio::spawn_blocking(move || {
+            if sandboxed {
+                crate::portal::host_path(&path)
+            } else {
+                Some(path)
+            }
+        })
+        .await
+        .ok()
+        .flatten();
+        match real {
+            Some(path) => launch(app, vec![path.to_string_lossy().into_owned()], &toasts),
+            None => toasts.add_toast(adw::Toast::new(
+                "Porog cannot pass this file on. Open it from the app instead.",
+            )),
         }
-    }
+    });
 }
 
 /// Mark a status-bar word toggle on or off: weight for the eye, pressed state for a

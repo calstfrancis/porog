@@ -18,10 +18,8 @@ shows Sputnik's Now card. Ctrl+K searches the whole suite; see `PLAN.md`.
 
 Clicking an app's name always opens it plainly. The pencil beside a row's button leaves a one-line note
 for yourself that shows under that row until you clear it. Drop a PDF or EPUB on the window to read it in
-Pereplyot, or a `.typ` file to edit it in Zerkalo.
-
-Clicking an app's name always opens it plainly. The `details` word in the status bar shows the
-last three things per app.
+Pereplyot, or a `.typ` file to edit it in Zerkalo. The `details` word in the status bar shows the
+last three things per app. A button reads "Starting…" until its app is running.
 
 The menu (top right) has the System / Light / Dark theme choice, the changelog and About.
 The version number at the bottom right also opens the changelog. The theme choice is kept

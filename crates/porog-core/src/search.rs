@@ -6,12 +6,13 @@
 //! `flatpak run --command=`. Every Fond app has one. Each app's answer is shown in its own
 //! words, and the apps are asked at the same time, so a slow one does not hold up the rest.
 
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 use serde::Deserialize;
 
 use crate::helper::{self, Outcome};
-use crate::{is_installed, App, APPS};
+use crate::{is_installed, update_hint, App, Feature, APPS};
 
 /// The highest `schema` of an app's reply this Porog understands.
 const SCHEMA: u32 = 1;
@@ -91,6 +92,15 @@ const SOURCES: [Source; 5] = [
     },
 ];
 
+/// "This Zerkalo is too old to search here. Update Zerkalo to 0.58.0 or later."
+fn too_old_text(source: &Source) -> String {
+    format!(
+        "{} {}",
+        source.too_old,
+        update_hint(&APPS[source.app], Feature::Search)
+    )
+}
+
 /// Whether `query` is worth asking: two or more characters once trimmed.
 pub fn is_askable(query: &str) -> bool {
     query.trim().chars().count() >= 2
@@ -99,11 +109,17 @@ pub fn is_askable(query: &str) -> bool {
 /// Ask every source, all at once. Blocks: runs `flatpak info` and a helper per source, so call
 /// it from a worker thread. Groups come back in [`APPS`] order.
 pub fn search(query: &str) -> Vec<Group> {
+    search_until(query, &AtomicBool::new(false))
+}
+
+/// Like [`search`], but setting `cancel` kills the helpers still running, so a query that a
+/// newer one replaced does not leave processes behind.
+pub fn search_until(query: &str, cancel: &AtomicBool) -> Vec<Group> {
     let words: Vec<String> = query.split_whitespace().map(str::to_string).collect();
     std::thread::scope(|scope| {
         let asked: Vec<_> = SOURCES
             .iter()
-            .map(|source| scope.spawn(|| ask(source, &words)))
+            .map(|source| scope.spawn(|| ask(source, &words, cancel)))
             .collect();
         asked
             .into_iter()
@@ -118,14 +134,14 @@ pub fn search(query: &str) -> Vec<Group> {
     })
 }
 
-fn ask(source: &Source, words: &[String]) -> Answer {
+fn ask(source: &Source, words: &[String], cancel: &AtomicBool) -> Answer {
     let app = &APPS[source.app];
     if !is_installed(app) {
         return Answer::Message(format!("{} is not installed.", app.name));
     }
-    match helper::run(app, source.command, words, TIMEOUT) {
+    match helper::run_until(app, source.command, words, TIMEOUT, Some(cancel)) {
         Outcome::Answer(text) => parse(source, &text),
-        Outcome::Failed => Answer::Message(source.too_old.to_string()),
+        Outcome::Failed => Answer::Message(too_old_text(source)),
         Outcome::TimedOut => Answer::Message(source.no_answer.to_string()),
     }
 }
@@ -158,7 +174,7 @@ struct ReplyHit {
 }
 
 fn parse(source: &Source, text: &str) -> Answer {
-    let too_old = || Answer::Message(source.too_old.to_string());
+    let too_old = || Answer::Message(too_old_text(source));
     let Ok(reply) = serde_json::from_str::<Reply>(text.trim()) else {
         return too_old();
     };
@@ -271,7 +287,7 @@ mod tests {
 
     #[test]
     fn anything_else_reads_as_an_old_kartoteka() {
-        let old = Answer::Message(SOURCES[2].too_old.to_string());
+        let old = Answer::Message(too_old_text(&SOURCES[2]));
         assert_eq!(parse(&SOURCES[2], "not json"), old);
         assert_eq!(parse(&SOURCES[2], r#"{"schema":9,"hits":[]}"#), old);
         assert_eq!(parse(&SOURCES[2], r#"{"hits":[]}"#), old);

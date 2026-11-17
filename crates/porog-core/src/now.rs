@@ -11,7 +11,7 @@ use std::time::Duration;
 use serde::Deserialize;
 
 use crate::helper::{self, Outcome};
-use crate::{is_installed, App, APPS};
+use crate::{is_installed, update_hint, App, Feature, APPS};
 
 /// The highest `schema` of Sputnik's reply this Porog understands.
 const SCHEMA: u32 = 1;
@@ -20,6 +20,11 @@ const TIMEOUT: Duration = Duration::from_secs(5);
 
 pub const NOT_INSTALLED: &str = "Sputnik is not installed.";
 pub const TOO_OLD: &str = "This Sputnik is too old to show today here.";
+
+/// [`TOO_OLD`] and what to do about it.
+pub fn too_old_message() -> String {
+    format!("{TOO_OLD} {}", update_hint(&APPS[0], Feature::Now))
+}
 pub const NO_ANSWER: &str = "Sputnik did not answer.";
 
 /// A button Sputnik offers for its Now item: start `app` with `args`.
@@ -122,7 +127,7 @@ pub fn fetch() -> NowView {
     match helper::run(&APPS[0], "sputnik-now", &[], TIMEOUT) {
         Outcome::Answer(text) => parse(&text),
         // A Sputnik without the command fails outright rather than answering.
-        Outcome::Failed => NowView::Message(TOO_OLD.to_string()),
+        Outcome::Failed => NowView::Message(too_old_message()),
         Outcome::TimedOut => NowView::Message(NO_ANSWER.to_string()),
     }
 }
@@ -130,7 +135,7 @@ pub fn fetch() -> NowView {
 /// Turn Sputnik's reply into what to show. Anything that is not a reply Porog understands
 /// reads as an old Sputnik: showing nothing is better than showing a guess.
 pub fn parse(text: &str) -> NowView {
-    let too_old = || NowView::Message(TOO_OLD.to_string());
+    let too_old = || NowView::Message(too_old_message());
     let Ok(reply) = serde_json::from_str::<Reply>(text.trim()) else {
         return too_old();
     };
@@ -273,7 +278,7 @@ mod tests {
 
     #[test]
     fn anything_unreadable_or_newer_reads_as_too_old() {
-        let too_old = NowView::Message(TOO_OLD.to_string());
+        let too_old = NowView::Message(too_old_message());
         assert_eq!(parse(""), too_old);
         assert_eq!(parse("not json"), too_old);
         assert_eq!(parse(r#"{"schema":2,"now":{"title":"x"}}"#), too_old);

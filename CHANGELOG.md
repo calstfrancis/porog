@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **A button shows it was pressed.** Resume, Open and the Now card's buttons read "Starting…" and ignore
+  further presses until the app is running (at most three seconds). If the app exits with an error in that
+  time, a message says "… did not start." instead of nothing.
+- **A dropped file reaches the app from inside the sandbox.** Porog asks the document portal for the file's
+  real path, since the portal's own path is not visible to the other app. If it cannot, it says so.
+- **Messages say what to do.** "This Sputnik is too old to show today here. Update Sputnik to 0.24.2 or later."
+  The same for each app's search.
+- A search that a newer query replaced, or whose window closed, stops its helper processes instead of leaving
+  them to finish; a helper that times out is killed.
+
 ## [0.4.0] "Left Note" — 2026-11-17 — Notes, dropped files, what is due next
 
 ### Added

@@ -1,6 +1,7 @@
 # Porog — Plan
 
-**Created:** 2026-11-10 · **Status:** Phases 1–3 built (Phase 1 except the items that need a GitHub remote); nothing committed or released
+**Created:** 2026-11-10 · **Status:** Phases 1–6 built and released (0.1.0–0.4.0). Phases 7–14 written
+2026-11-17 and **not started**: wait for Cal to say "implement the plan".
 
 Porog (порог, "threshold") is the way back into the Fond suite: Zerkalo, Pereplyot,
 Kartoteka, Sputnik and Skrizhal. Same conventions as the other plan files: **read a phase
@@ -144,13 +145,11 @@ Three literal outcomes when there is no item to show: "Nothing placed on today."
       metainfo, icon, `cargo-sources.json`
 - [x] `check-versions.sh`, `dev-build.sh`, `publish-flatpak.sh`, `publish-flatpak-local.sh`,
       `ci.yml`, CI-published `release-flatpak.yml`, `RELEASE-CI-SETUP.md`
-- [ ] Cal: create the `calstfrancis/porog` GitHub repo and add it as `origin` (the manifest
-      builds from it, so no flatpak build is possible before this), then the one-time
+- [x] Cal: create the `calstfrancis/porog` GitHub repo and add it as `origin`, then the one-time
       secrets setup in `RELEASE-CI-SETUP.md`
-- [ ] First dev build, then test launching from inside the flatpak: the
-      `flatpak-spawn --host` path has only been exercised by unit tests on its arguments
-- [ ] Not started: Welcome / What's New window, `capture-screenshots.sh`,
-      `release-preflight.sh`. Add before the first real release.
+- [ ] Test launching from inside the flatpak: the `flatpak-spawn --host` path has only been
+      exercised by unit tests on its arguments. Moved to Phase 7.
+- [x] Welcome / What's New window, `capture-screenshots.sh`, `release-preflight.sh`
 
 ### Phase 2 — Resume
 - [x] `fond-status` crate in `fond-core`: types, atomic write, tolerant read, tests
@@ -161,14 +160,11 @@ Three literal outcomes when there is no item to show: "Nothing placed on today."
       `summary_until` = midnight, so Porog never shows last week's number), "412 references",
       "3 CV entries". All three use `fond_status::summary`, a shared background writer.
 - [x] `details` status-bar toggle
-- [ ] Not done: all of it is uncommitted in six repos, and every app depends on
-      `fond-status` by path (`../fond-core/crates/fond-status`). Once Cal pushes fond-core,
-      switch each to a git `rev` and regenerate each `packaging/cargo-sources.json`; no
-      flatpak can build before that.
+- [x] Committed in all six repos; every app depends on `fond-status` as a git `rev` of fond-core,
+      with `packaging/cargo-sources.json` regenerated.
 - [x] Docs: CHANGELOG/README in all six apps, Porog's own CHANGELOG/README/CLAUDE.md, §2
       keyboard wording, fond-core README.
-- [ ] Not done: Porog's `packaging/cargo-sources.json` (regenerate once `fond-status` is a git
-      dependency; doing it now would vendor a path the flatpak cannot see).
+- [x] Porog's `packaging/cargo-sources.json`, regenerated once `fond-status` was a git dependency.
 - [ ] Known limit: Kartoteka's and Skrizhal's counts are as of their last run.
 
 ### Phase 3 — Now
@@ -226,7 +222,191 @@ Three literal outcomes when there is no item to show: "Nothing placed on today."
       shown, a dragged `.typ` started Zerkalo with its path, a dragged `.bib` got the toast.
 - [ ] Not done: the real flatpak sandbox. A file dropped on the sandboxed Porog arrives as a document-portal
       path; whether the other app's sandbox can read that path is untested, and Porog's manifest has no
-      home access by design.
+      home access by design. Moved to Phase 7.
+
+---
+
+## Plan II — Phases 7–14 (written 2026-11-17)
+
+Phases 1–6 gave Porog its shape. Phases 7–14 make it trustworthy, deepen the one thing it is
+for (getting back into work), and let it be reached without opening its window. P1–P7 still
+hold. Each phase lists the other repos it touches. Apps change first and Porog copes with an
+older app (fields stay optional, P7), so no release has to wait for another.
+
+Order: Phase 7 first (D10). After that, the numbered order, though 10 and 11 do not depend on
+8 or 9.
+
+Out of scope on purpose (D14): notifications, streaks, statistics, sorting by recency, an
+unread dot or "new" badge on anything, starting at login, energy or capacity tracking (Sputnik
+and Chered own those), and one button that opens several windows (D8).
+
+### Phase 7 — Trust what is there
+Fixes first: a launcher you cannot trust undoes everything else.
+
+- [x] **"New essay" stops making duplicates.** Today Zerkalo's `--new-document=TITLE` always takes a
+      free name (`zerkalo/src/new_document.rs`), so a second click, or coming back the next day,
+      makes "… Essay 2.typ", and Sputnik keeps offering "New essay" after the draft exists.
+      - Zerkalo: when `<stem>.typ` already exists in `work_dir`, open it instead of making a new
+        file. Never overwrite. Update its tests and README.
+      - Sputnik: the label becomes **Write essay**, which is true whether the draft is new or not
+        (P3). Update `now_helper.rs` and its test.
+      - Porog: nothing changes; the label is Sputnik's.
+- [x] **A click shows it registered.** After a launch button is pressed it reads "Starting…" and
+      ignores further presses until Porog's window loses focus (the app's window took it) or 4 s
+      pass. If `flatpak run` exits with an error within those 4 s, a toast says "Zerkalo did not
+      start." `porog_core::launch` reports an early exit through a channel instead of only
+      reaping the child. The same applies to the Now card's buttons and search results (search
+      closes its window, so only the early-exit toast there).
+- [ ] **The real sandbox, tested with Cal.** Install the current flatpak and check by hand: Open,
+      Resume (the host `test -e` check), the Now card, search, the Now card's action button, and a
+      dropped file. Nothing here has run in the real sandbox yet.
+- [x] **Dropped files in the sandbox.** A file dropped on the sandboxed Porog arrives as a
+      document-portal path the target app most likely cannot see. Ask the portal for the real
+      path (`org.freedesktop.portal.Documents.GetHostPaths`) and hand that to the app, whose
+      sandbox has home access. If the portal cannot answer, a toast says "Porog cannot pass this
+      file on. Open it from the app instead." Outside a sandbox, nothing changes.
+- [x] **Helpers never outlive their question.** `helper::run` kills the process when it times
+      out, and a search that a newer query replaced kills its remaining helpers instead of
+      letting them finish.
+- [x] **Every message says what to do next.** "This Sputnik is too old to show today here.
+      Update Sputnik to 0.X or later." Same for each app's search message. The versions come from
+      one table in `porog-core` (`MIN_VERSIONS`: app × feature), checked against each app's
+      CHANGELOG when written and added to Porog's release checklist in `CLAUDE.md`.
+- [x] **Groundwork for the later phases:** split `window.rs` (771 lines) into `row.rs` (`AppRow`),
+      `now_area.rs` (`NowArea`) and `window.rs` (assembly, actions), with no change in behaviour.
+- [x] README: remove the doubled "Clicking an app's name always opens it plainly" paragraph.
+- Touches: Zerkalo, Sputnik, Porog.
+
+### Phase 8 — Better cues for getting back in
+A file name is a weak cue. A line from the work itself (the heading you were under, the passage
+you last marked) is a strong one: interruption research (Altmann & Trafton's memory-for-goals
+model) finds that concrete cues from the task shorten the time to resume, and for an
+autistic or monotropic user, re-entry is the costly moment (§0).
+
+- [ ] `fond-status`: `ResumeEntry` gains an optional `context` (one line, at most 120
+      characters, cut by the writer). An additive field, so no schema bump. Tests for the round
+      trip and for a file without it.
+- [ ] Zerkalo writes `context` for the document in front: the nearest heading above the cursor,
+      then the start of the sentence the cursor is in, e.g. `§2 Method · "…the second argument
+      fails because"`. Written whenever it already writes the status file; no extra writes.
+      Quotes from the document are fine (D9).
+- [ ] Pereplyot writes `context`: the text of the newest highlight in that document, or else the
+      chapter or section title at the current position.
+- [ ] Porog shows `context` as one dim line under the first entry, ellipsized, always (it is part
+      of the one item, not another item, so P6 holds), and under each older entry with `details`
+      on. The Resume button's tooltip carries it too.
+- [ ] **Notes carry their date.** A note shows "· left 3 Nov" after it, in the same words as the
+      row times (`status::describe_when`). Notes stay per app (D11): the row is the place that
+      never moves, while a note tied to one document would vanish from view as soon as another
+      document came first, which is when it is needed. Config: `notes` becomes `{text, at}` per
+      app, reading the old plain-string form without loss.
+- Touches: fond-core (`fond-status`), Zerkalo, Pereplyot, Porog. Each app moves to the new
+  fond-core rev on its own; an app still on the old rev writes no `context`, and Porog shows
+  nothing in its place.
+
+### Phase 9 — The assignment's pieces
+When the Now item is an assignment, the things needed for it live in three apps. Sputnik knows
+what they are; Porog shows them (P2).
+
+- [ ] Sputnik's `--now` reply gains an optional `pieces` list, at most four, each
+      `{label, title, app, args}`: the **Draft** (Zerkalo, `--new-document=COURSE: Title`, which
+      after Phase 7 opens the draft if it exists), then the assignment's **readings** (Pereplyot,
+      the same arguments Sputnik's own timeline uses). Only pieces whose file or library entry is
+      there right now.
+- [ ] Investigate, then decide: a **References** piece opening Kartoteka on the course's
+      references. Kartoteka takes only one `kartoteka:KEY` today, so this needs a new Kartoteka
+      argument (e.g. `--keys=a,b,c` showing just those). Do it only if that argument is small.
+- [ ] Porog shows the pieces under the Now card with `details` on, one line each, each with its
+      own button. No "open all" button (D8). Unknown apps and unlabelled pieces are dropped, as
+      with `action`.
+- Touches: Sputnik, perhaps Kartoteka, Porog.
+
+### Phase 10 — Each app's What's New, from its row (Cal, 2026-11-17)
+- [ ] A small icon on every row, between the note pencil and the main button, opens that app's
+      What's New in a Porog window: "What's new in Zerkalo 0.59.0 'Release Name'", then the
+      headline-and-detail bullets, in the app's words. The icon is the same on every row and
+      never changes: no dot, no badge, no "unread" state (P5, D14). Tooltip and accessible name:
+      "What's new in Zerkalo". Insensitive when the app is not installed.
+- [ ] Asked for, like the Now card: each app ships `<app>-whats-new` (flatpak `--command`), which
+      prints `{schema: 1, version, release_name?, items: [{headline, detail}]}` and exits, without
+      opening a window (D12).
+      - Zerkalo, Pereplyot, Sputnik: from the same list their own What's New window uses
+        (`welcome_window.rs`, `welcome.rs`, `whats_new.rs`), so the two cannot disagree. Move the
+        list into a function both call where it is not already shared.
+      - Kartoteka, Skrizhal (no What's New window): the newest `CHANGELOG.md` entry, embedded at
+        build time, each `- **Headline.** detail` bullet as one item and any other bullet as a
+        headline alone.
+- [ ] Porog: `porog-core/src/whats_new.rs` (types, parse, tests, using `helper::run`) and a window
+      reusing `welcome.rs`'s bullet layout. An app too old to answer: "This Zerkalo is too old to
+      show what's new here. Update Zerkalo to 0.X or later." (Phase 7's table.)
+- [ ] Porog's own row of icons stays as it is: its own What's New stays in the menu.
+- Touches: all five apps, Porog.
+
+### Phase 11 — Reach Porog from outside its window (Cal, 2026-11-17)
+No GNOME Shell search provider: Cal does not use Activities search (D13).
+
+- [ ] **System tray icon, off by default.** A menu switch "Show in system tray", saved in
+      `config.json` (`tray: bool`).
+      - Built on StatusNotifierItem (the `ksni` crate, on its own thread, talking to the GTK side
+        through a channel). The icon is Porog's own and never changes (P5).
+      - Its menu: **Show Porog**, then one line per app in row order ("Resume Zerkalo —
+        essay-2.typ" or "Open Kartoteka", the same words and rule as the row's button, P3),
+        **Search…** (shows Porog with the search box), **Quit Porog**. Rebuilt when a status file
+        changes (a file monitor on the status directory), never reordered.
+      - With the tray on, closing the window hides it and Porog keeps running (`app.hold()`);
+        the switch's subtitle says so in plain words. With it off, closing quits, as now.
+      - GNOME shows no tray icons without the AppIndicator extension. Porog checks whether
+        `org.kde.StatusNotifierWatcher` is on the session bus; if not, the switch's subtitle says
+        "Your desktop shows no tray icons. On GNOME, install the AppIndicator extension." and the
+        switch still works once the extension is there.
+      - Manifest: `--talk-name=org.kde.StatusNotifierWatcher` and
+        `--own-name=org.kde.StatusNotifierItem-*`.
+- [ ] **Command line:** `porog --resume=APP`, `porog --open=APP` and `porog --search[=WORDS]`,
+      handed to the running Porog if there is one (GApplication command-line handling), with
+      APP the status name (`zerkalo`). The README shows how to bind one to a GNOME keyboard
+      shortcut (`flatpak run io.github.calstfrancis.Porog --resume=zerkalo`).
+- [ ] Open question, for Cal (O1): with the tray on, should Porog also be offered a "start at
+      login" switch? D5 says Porog does not start at login, so not without Cal saying so.
+- Touches: Porog only.
+
+### Phase 12 — The suite at a glance, and the first run
+- [ ] **"Not installed" leads somewhere.** The row's button becomes **How to install**, opening a
+      small dialog: the exact `flatpak install calstfrancis <id>` command with a Copy button, and
+      **Open in Software** (`appstream://<id>`).
+- [ ] **A Suite window** (menu: "The suite"): one line per app with its installed version and,
+      for each thing Porog can ask of it (status file, Now, search, What's New, context lines),
+      whether it answers, found by asking, not by version guessing. Each missing one says the
+      fix ("Update Zerkalo to 0.X or later"). Run off the main thread, on opening only (P4).
+- [ ] **A first run that fits what is installed.** The Welcome window lists the five apps with
+      installed or not, and says plainly that rows fill in as each app is used ("Zerkalo will
+      show your last document here once you have opened one").
+- Touches: Porog only.
+
+### Phase 13 — Keyboard, screen reader, search
+- [ ] Shortcuts window (Ctrl+?, also in the menu) listing every key.
+- [ ] On a focused row: **N** edits its note, **W** opens its What's New.
+- [ ] Screen reader pass with Orca: each row read as one sentence ("Zerkalo. essay-2.typ,
+      yesterday 16:40. Resume."), the Now card read as a whole, toasts announced.
+- [ ] Checked at 200% text size, at 360 px width, and with animations off.
+- [ ] Search: the matched words in bold (escaped markup); each app's group shows "Asking…" until
+      it answers, so results appear as each app replies instead of all at once (groups keep the
+      fixed order); the last query is kept, selected, when search is reopened.
+- [ ] Search: under each group, **Search in Kartoteka for "words"** continues inside the app, for
+      each app that takes a `--search=WORDS` argument. Add that argument to an app only where its
+      own search box can be filled from outside without much work; list which in this file.
+- Touches: Porog, and some apps for `--search=`.
+
+### Phase 14 — Engineering
+- [ ] Remove the `unsafe` `set_data` in `search.rs`: keep each row's target in a `Vec` indexed by
+      row, or a small `glib::BoxedAnyObject`.
+- [ ] **Shared example replies.** `fond-core/contracts/` holds JSON examples of every helper reply
+      and the status file (`now/*.json`, `search/*.json`, `whats-new/*.json`, `status/*.json`). Porog
+      parses each in a test; each app checks that what it prints has the same fields. Plain files
+      rather than shared Rust types, so no app has to move to a new fond-core rev to stay in step.
+- [ ] Headless smoke test in CI: Xvfb plus the fake `flatpak` from `capture-screenshots.sh`,
+      checking the window builds, Now and rows fill, and a launch reaches the fake.
+- [ ] Porog `CLAUDE.md`: `MIN_VERSIONS` and the contract examples in the release checklist.
+- Touches: fond-core, all five apps (tests only), Porog.
 
 ## 5. Decisions
 
@@ -242,8 +422,19 @@ Settled 2026-11-10:
 | D6 | Row order: Sputnik, Pereplyot, Kartoteka, Zerkalo, Skrizhal — the order the work runs in. Cal had no preference; chosen by Claude. Fixed from here on. |
 | D7 | Porog stays open after Start, Resume or Open. |
 
-Open (waits for Phase 4):
+Settled 2026-11-17 (Plan II):
 
-1. **Search source.** Status files do not carry 412 references. Either each app gets a
-   `--search-json <query>` helper, or Porog reads the plain files directly (Kartoteka's
-   vault is plain files by design; Sputnik's vault is not meant to be read by others).
+| | Decision |
+|---|---|
+| D8 | No button opens several apps at once; each piece of an assignment has its own button (Cal). |
+| D9 | Status files may carry short quotes from the user's documents as `context` (Cal). |
+| D10 | Phase 7 (trust) comes first (Cal). |
+| D11 | Notes stay per app, now with the date they were left. Chosen by Claude at Cal's request: the row never moves, a per-document note would disappear when another document comes first. |
+| D12 | An app's What's New is asked for through an `<app>-whats-new` helper and shown in a Porog window, not by starting the app with a flag: it does not open a whole app to read a list, and works the same for apps with no What's New window. Chosen by Claude. |
+| D13 | No GNOME Shell search provider: Cal does not use Activities search. |
+| D14 | The out-of-scope list at the top of Plan II stays out of scope. |
+
+Open:
+
+- **O1.** With the tray on, offer "start at login"? Not without Cal saying so (D5).
+- Search source (was open until Phase 4): settled as a helper command per app.

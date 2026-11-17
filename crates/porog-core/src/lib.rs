@@ -13,6 +13,7 @@ pub mod status;
 use std::io;
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 /// One Fond app, as Porog shows and launches it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,6 +63,47 @@ pub const APPS: [App; 5] = [
     },
 ];
 
+/// Something Porog asks an app for, which an older release of that app cannot answer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Feature {
+    /// The status file the rows read.
+    Status,
+    /// Sputnik's `sputnik-now`.
+    Now,
+    /// The app's `<app>-search` helper.
+    Search,
+}
+
+/// The first release of each app that can answer each [`Feature`], by `status_name`. Checked
+/// against the app's CHANGELOG when written; add a row here whenever Porog starts asking an
+/// app for something new, in the same change (see `CLAUDE.md`). An app not listed for a
+/// feature has no version to name yet, and the message just says to update it.
+const MIN_VERSIONS: &[(&str, Feature, &str)] = &[
+    ("sputnik", Feature::Status, "0.24.2"),
+    ("pereplyot", Feature::Status, "0.23.2"),
+    ("kartoteka", Feature::Status, "0.24.0"),
+    ("zerkalo", Feature::Status, "0.57.2"),
+    ("skrizhal", Feature::Status, "0.4.1"),
+    ("sputnik", Feature::Now, "0.24.2"),
+    ("sputnik", Feature::Search, "0.25.0"),
+    ("pereplyot", Feature::Search, "0.24.0"),
+    ("kartoteka", Feature::Search, "0.24.0"),
+    ("zerkalo", Feature::Search, "0.58.0"),
+    ("skrizhal", Feature::Search, "0.5.0"),
+];
+
+/// What to do about an app that cannot answer `feature`: "Update Sputnik to 0.25.0 or later."
+pub fn update_hint(app: &App, feature: Feature) -> String {
+    let version = MIN_VERSIONS
+        .iter()
+        .find(|(name, f, _)| *name == app.status_name && *f == feature)
+        .map(|(_, _, version)| *version);
+    match version {
+        Some(version) => format!("Update {} to {version} or later.", app.name),
+        None => format!("Update {}.", app.name),
+    }
+}
+
 /// The app that opens a dropped file, by its extension: PDFs and EPUBs in Pereplyot, Typst
 /// files in Zerkalo. Anything else has no app, and Porog says so instead of guessing.
 pub fn app_for_file(path: &Path) -> Option<&'static App> {
@@ -110,13 +152,30 @@ pub fn is_installed(app: &App) -> bool {
         .unwrap_or(false)
 }
 
-/// Start `app` and return once it has been spawned; the app outlives this call.
+/// How long [`launch`] watches a new process for an early failure before calling it started.
+pub const LAUNCH_GRACE: Duration = Duration::from_secs(3);
+
+/// Start `app` and return once it is clearly running. `flatpak run` that fails (the app is
+/// missing, the arguments are refused) exits within moments with an error; that is reported as
+/// an `Err`. One still running after [`LAUNCH_GRACE`], or that has exited successfully, counts
+/// as started. Blocks for at most the grace period, so call it from a worker thread.
 pub fn launch(app: &App, args: &[String]) -> io::Result<()> {
     let mut child = launch_command(app, args, in_flatpak_sandbox())
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()?;
+    let deadline = Instant::now() + LAUNCH_GRACE;
+    loop {
+        match child.try_wait()? {
+            Some(status) if status.success() => return Ok(()),
+            Some(status) => {
+                return Err(io::Error::other(format!("flatpak run exited with {status}")))
+            }
+            None if Instant::now() >= deadline => break,
+            None => std::thread::sleep(Duration::from_millis(50)),
+        }
+    }
     // Reap the child when it exits, so a long Porog session doesn't collect zombies.
     std::thread::spawn(move || {
         let _ = child.wait();
@@ -142,6 +201,15 @@ mod tests {
             names,
             ["Sputnik", "Pereplyot", "Kartoteka", "Zerkalo", "Skrizhal"]
         );
+    }
+
+    #[test]
+    fn the_hint_names_the_version_when_one_is_known() {
+        assert_eq!(
+            update_hint(&APPS[0], Feature::Search),
+            "Update Sputnik to 0.25.0 or later."
+        );
+        assert_eq!(update_hint(&APPS[1], Feature::Now), "Update Pereplyot.");
     }
 
     #[test]

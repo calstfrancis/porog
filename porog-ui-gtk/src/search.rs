@@ -2,8 +2,10 @@
 //! app order. Enter opens the highlighted result in its app. The window keeps one size, and
 //! the line under the box is always there, so nothing moves while typing.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use adw::prelude::*;
 use gtk::{gio, glib};
@@ -66,16 +68,23 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
     // Each question gets a number; an answer that is no longer the latest is dropped.
     let latest = Rc::new(Cell::new(0u32));
     let pending: Rc<Cell<Option<glib::SourceId>>> = Rc::new(Cell::new(None));
+    // Set when the question it belongs to is replaced or the window closes: the helpers
+    // still running for it are then killed instead of left to finish.
+    let cancel: Rc<RefCell<Arc<AtomicBool>>> = Rc::default();
 
     entry.connect_search_changed({
         let list = list.clone();
         let line = line.clone();
         let latest = latest.clone();
         let pending = pending.clone();
+        let cancel = cancel.clone();
         move |entry| {
             if let Some(id) = pending.take() {
                 id.remove();
             }
+            cancel.borrow().store(true, Ordering::Relaxed);
+            let token = Arc::new(AtomicBool::new(false));
+            *cancel.borrow_mut() = token.clone();
             let query = entry.text().to_string();
             let number = latest.get() + 1;
             latest.set(number);
@@ -94,9 +103,11 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
                     move || {
                         pending.set(None);
                         glib::spawn_future_local(async move {
-                            let groups = gio::spawn_blocking(move || search::search(&query))
-                                .await
-                                .unwrap_or_default();
+                            let groups = gio::spawn_blocking(move || {
+                                search::search_until(&query, &token)
+                            })
+                            .await
+                            .unwrap_or_default();
                             if latest.get() == number {
                                 fill(&list, &line, &groups);
                             }
@@ -163,6 +174,14 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay) {
         }
     });
     window.add_controller(escape);
+
+    window.connect_close_request({
+        let cancel = cancel.clone();
+        move |_| {
+            cancel.borrow().store(true, Ordering::Relaxed);
+            glib::Propagation::Proceed
+        }
+    });
 
     window.present();
     entry.grab_focus();
