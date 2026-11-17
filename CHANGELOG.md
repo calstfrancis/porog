@@ -9,6 +9,10 @@
 - **Notes show when they were left** ("next: rewrite the intro · left 3 Nov"), so you can tell how old one is
   without anything telling you it is old. Notes written before this have no date and show as before.
 
+- **The pieces of an assignment.** With `details` on, a paper on the Now card lists what it is made of, each
+  with its own *Open*: the draft in Zerkalo, then the readings the assignment links to in Pereplyot. No button
+  opens them all at once. Needs the next Sputnik.
+
 ### Changed
 - **A button shows it was pressed.** Resume, Open and the Now card's buttons read "Starting…" and ignore
   further presses until the app is running (at most three seconds). If the app exits with an error in that

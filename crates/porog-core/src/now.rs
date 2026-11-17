@@ -45,6 +45,19 @@ pub struct LaterItem {
 /// How many `later` lines are kept, whatever Sputnik sends.
 const LATER_MAX: usize = 3;
 
+/// How many `pieces` are kept, whatever Sputnik sends.
+const PIECES_MAX: usize = 4;
+
+/// One thing the Now item is made of, with its own button: "Draft · THM 501: Essay" opening
+/// the document in Zerkalo, "Reading · …" opening a linked reading in Pereplyot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NowPiece {
+    pub label: String,
+    pub title: String,
+    pub app: &'static App,
+    pub args: Vec<String>,
+}
+
 /// What the Now area shows.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NowView {
@@ -58,6 +71,8 @@ pub enum NowView {
         action: Option<NowAction>,
         /// What comes next by date, shown only with `details` on.
         later: Vec<LaterItem>,
+        /// What the item is made of, shown only with `details` on.
+        pieces: Vec<NowPiece>,
     },
     /// One plain line: a literal outcome above, or Sputnik's own reason it has no card
     /// ("Sputnik has no vault yet.").
@@ -72,7 +87,36 @@ struct Reply {
     action: Option<Action>,
     #[serde(default)]
     later: Vec<Later>,
+    #[serde(default)]
+    pieces: Vec<Piece>,
     error: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Piece {
+    #[serde(default)]
+    label: String,
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    app: String,
+    #[serde(default)]
+    args: Vec<String>,
+}
+
+impl Piece {
+    /// A piece needs a title and an app Porog knows; anything else is dropped, as with an
+    /// [`Action`].
+    fn into_piece(self) -> Option<NowPiece> {
+        let app = APPS.iter().find(|a| a.status_name == self.app)?;
+        let title = self.title.trim();
+        (!title.is_empty()).then(|| NowPiece {
+            label: self.label.trim().to_string(),
+            title: title.to_string(),
+            app,
+            args: self.args,
+        })
+    }
 }
 
 #[derive(Deserialize)]
@@ -163,6 +207,12 @@ pub fn parse(text: &str) -> NowView {
                 detail: l.detail,
             })
             .collect(),
+        pieces: reply
+            .pieces
+            .into_iter()
+            .filter_map(Piece::into_piece)
+            .take(PIECES_MAX)
+            .collect(),
     }
 }
 
@@ -196,6 +246,7 @@ mod tests {
                 footer: Some("2 more today · 1 needs a decision".to_string()),
                 action: None,
                 later: Vec::new(),
+                pieces: Vec::new(),
             }
         );
     }
@@ -211,6 +262,28 @@ mod tests {
         let titles: Vec<_> = later.iter().map(|l| l.title.as_str()).collect();
         assert_eq!(titles, ["Essay", "b", "c"]);
         assert_eq!(later[0].detail, "THM 501 · due Fri Nov 20");
+    }
+
+    #[test]
+    fn pieces_are_kept_for_known_apps_and_capped() {
+        let reply = r#"{"schema":1,"now":{"title":"Essay"},"pieces":[
+            {"label":"Draft","title":"THM 501: Essay","app":"zerkalo","args":["--new-document=THM 501: Essay"]},
+            {"label":"Reading","title":"Soskice","app":"pereplyot","args":["/a.pdf"]},
+            {"label":"Reading","title":"Unknown app","app":"gimp","args":[]},
+            {"label":"Reading","title":" ","app":"pereplyot","args":[]},
+            {"title":"No label is fine","app":"kartoteka"},
+            {"title":"c","app":"zerkalo"},{"title":"d","app":"zerkalo"}]}"#;
+        let NowView::Card { pieces, .. } = parse(reply) else {
+            panic!("expected a card");
+        };
+        let titles: Vec<_> = pieces.iter().map(|p| p.title.as_str()).collect();
+        assert_eq!(
+            titles,
+            ["THM 501: Essay", "Soskice", "No label is fine", "c"]
+        );
+        assert_eq!(pieces[0].label, "Draft");
+        assert_eq!(pieces[1].app.name, "Pereplyot");
+        assert_eq!(pieces[2].label, "");
     }
 
     #[test]

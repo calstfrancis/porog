@@ -308,15 +308,17 @@ autistic or monotropic user, re-entry is the costly moment (§0).
 When the Now item is an assignment, the things needed for it live in three apps. Sputnik knows
 what they are; Porog shows them (P2).
 
-- [ ] Sputnik's `--now` reply gains an optional `pieces` list, at most four, each
+- [x] Sputnik's `--now` reply gains an optional `pieces` list, at most four, each
       `{label, title, app, args}`: the **Draft** (Zerkalo, `--new-document=COURSE: Title`, which
       after Phase 7 opens the draft if it exists), then the assignment's **readings** (Pereplyot,
       the same arguments Sputnik's own timeline uses). Only pieces whose file or library entry is
       there right now.
-- [ ] Investigate, then decide: a **References** piece opening Kartoteka on the course's
+- [x] Investigated, not done: a **References** piece opening Kartoteka on the course's
       references. Kartoteka takes only one `kartoteka:KEY` today, so this needs a new Kartoteka
       argument (e.g. `--keys=a,b,c` showing just those). Do it only if that argument is small.
-- [ ] Porog shows the pieces under the Now card with `details` on, one line each, each with its
+      Result: it is not small (a multi-key argument means a filtered library view in Kartoteka, not
+      just argument parsing), so no References piece. Revisit if Kartoteka grows such a view.
+- [x] Porog shows the pieces under the Now card with `details` on, one line each, each with its
       own button. No "open all" button (D8). Unknown apps and unlabelled pieces are dropped, as
       with `action`.
 - Touches: Sputnik, perhaps Kartoteka, Porog.

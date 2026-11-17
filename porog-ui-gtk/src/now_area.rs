@@ -8,7 +8,7 @@ use gtk::{gio, glib};
 use gtk4 as gtk;
 use libadwaita as adw;
 
-use porog_core::now::{self, LaterItem, NowView};
+use porog_core::now::{self, LaterItem, NowPiece, NowView};
 use porog_core::App;
 
 use crate::window::launch_then;
@@ -25,6 +25,9 @@ pub(crate) struct NowArea {
     target: ActionTarget,
     /// What is due next, in Sputnik's words; shown only with `details` on.
     later: gtk::Box,
+    /// What the Now item is made of, each with its own button; shown only with `details` on.
+    pieces: gtk::Box,
+    toasts: adw::ToastOverlay,
     details: Rc<Cell<bool>>,
 }
 
@@ -62,9 +65,16 @@ impl NowArea {
             .margin_top(6)
             .visible(false)
             .build();
+        let pieces = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(2)
+            .margin_top(6)
+            .visible(false)
+            .build();
         for label in [&eyebrow, &title, &detail, &footer] {
             text.append(label);
         }
+        text.append(&pieces);
         text.append(&later);
         let open = gtk::Button::builder()
             .label("Open Sputnik")
@@ -120,6 +130,8 @@ impl NowArea {
             action,
             target,
             later,
+            pieces,
+            toasts: toasts.clone(),
             details,
         };
         area.show(&NowView::Message("Looking…".to_string()));
@@ -134,6 +146,7 @@ impl NowArea {
                 footer,
                 action,
                 later,
+                ..
             } => (
                 title.as_str(),
                 detail.as_str(),
@@ -144,6 +157,10 @@ impl NowArea {
             NowView::Message(message) => (message.as_str(), "", None, None, &[][..]),
         };
         self.show_later(later);
+        self.show_pieces(match view {
+            NowView::Card { pieces, .. } => pieces,
+            NowView::Message(_) => &[],
+        });
         self.action.set_visible(action.is_some());
         if let Some(action) = action {
             self.action.set_label(&action.label);
@@ -182,10 +199,63 @@ impl NowArea {
         self.show_details();
     }
 
-    /// Show or hide the "due next" lines to match the `details` toggle.
+    /// Replace the Now item's pieces: one line each, "Draft · THM 501: Essay", with its own
+    /// button. Each button starts one app; none starts several (`PLAN.md` D8).
+    fn show_pieces(&self, pieces: &[NowPiece]) {
+        while let Some(child) = self.pieces.first_child() {
+            self.pieces.remove(&child);
+        }
+        for piece in pieces {
+            let text = if piece.label.is_empty() {
+                piece.title.clone()
+            } else {
+                format!("{} · {}", piece.label, piece.title)
+            };
+            let label = gtk::Label::builder()
+                .label(&text)
+                .tooltip_text(&text)
+                .xalign(0.0)
+                .hexpand(true)
+                .ellipsize(gtk::pango::EllipsizeMode::End)
+                .css_classes(["fond-row-detail"])
+                .build();
+            let hint = format!("Open {text} in {}", piece.app.name);
+            let open = gtk::Button::builder()
+                .label("Open")
+                .valign(gtk::Align::Center)
+                .tooltip_text(&hint)
+                .css_classes(["flat"])
+                .build();
+            open.update_property(&[gtk::accessible::Property::Label(&hint)]);
+            open.connect_clicked({
+                let app = piece.app;
+                let args = piece.args.clone();
+                let toasts = self.toasts.clone();
+                move |button| {
+                    button.set_label("Starting…");
+                    button.set_sensitive(false);
+                    let button = button.clone();
+                    launch_then(app, args.clone(), &toasts, move || {
+                        button.set_label("Open");
+                        button.set_sensitive(true);
+                    });
+                }
+            });
+            let line = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+            line.append(&label);
+            line.append(&open);
+            self.pieces.append(&line);
+        }
+        self.show_details();
+    }
+
+    /// Show or hide the pieces and the "due next" lines to match the `details` toggle.
     pub(crate) fn show_details(&self) {
+        let on = self.details.get();
         self.later
-            .set_visible(self.details.get() && self.later.first_child().is_some());
+            .set_visible(on && self.later.first_child().is_some());
+        self.pieces
+            .set_visible(on && self.pieces.first_child().is_some());
     }
 
     /// Ask Sputnik again, off the main thread.
