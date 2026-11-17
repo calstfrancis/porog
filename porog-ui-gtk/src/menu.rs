@@ -200,11 +200,13 @@ pub fn build(
     rows.append(&popover_separator());
 
     let suite = popover_button("The suite");
+    let shortcuts = popover_button("Keyboard shortcuts");
     let whats_new = popover_button("What's New");
     let changelog = popover_button("Changelog");
     let about = popover_button("About Porog");
     for (row, action) in [
         (&suite, "suite"),
+        (&shortcuts, "shortcuts"),
         (&whats_new, "whats-new"),
         (&changelog, "changelog"),
         (&about, "about"),

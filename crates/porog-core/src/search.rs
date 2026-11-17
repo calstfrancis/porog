@@ -119,6 +119,65 @@ pub fn is_askable(query: &str) -> bool {
     query.trim().chars().count() >= 2
 }
 
+/// Ask the app in row `index` alone, so a caller can show each app's answer as it arrives instead
+/// of waiting for the slowest. Blocks, so call it from a worker thread. Setting `cancel` kills
+/// the helper.
+pub fn ask_app(index: usize, query: &str, cancel: &AtomicBool) -> Group {
+    let words: Vec<String> = query.split_whitespace().map(str::to_string).collect();
+    let source = &SOURCES[index];
+    Group {
+        app: &APPS[source.app],
+        answer: ask(source, &words, cancel),
+    }
+}
+
+/// `text` as Pango markup with each place a word of `query` occurs in bold, ignoring case. The
+/// text is escaped, so a title with `<` or `&` in it is shown as written.
+pub fn highlight_markup(text: &str, query: &str) -> String {
+    let words: Vec<Vec<char>> = query
+        .split_whitespace()
+        .map(|w| w.chars().map(fold).collect())
+        .collect();
+    let chars: Vec<char> = text.chars().collect();
+    let folded: Vec<char> = chars.iter().map(|c| fold(*c)).collect();
+    let mut bold = vec![false; chars.len()];
+    for word in words.iter().filter(|w| !w.is_empty()) {
+        let mut start = 0;
+        while start + word.len() <= folded.len() {
+            if folded[start..start + word.len()] == word[..] {
+                bold[start..start + word.len()].fill(true);
+                start += word.len();
+            } else {
+                start += 1;
+            }
+        }
+    }
+    let mut out = String::new();
+    let mut open = false;
+    for (c, &b) in chars.iter().zip(&bold) {
+        if b != open {
+            out.push_str(if b { "<b>" } else { "</b>" });
+            open = b;
+        }
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            c => out.push(*c),
+        }
+    }
+    if open {
+        out.push_str("</b>");
+    }
+    out
+}
+
+/// One character with case ignored: the first of its lowercase form, which keeps the text and its
+/// folded copy the same length.
+fn fold(c: char) -> char {
+    c.to_lowercase().next().unwrap_or(c)
+}
+
 /// Ask every source, all at once. Blocks: runs `flatpak info` and a helper per source, so call
 /// it from a worker thread. Groups come back in [`APPS`] order.
 pub fn search(query: &str) -> Vec<Group> {
@@ -304,6 +363,18 @@ mod tests {
         assert_eq!(parse(&SOURCES[2], "not json"), old);
         assert_eq!(parse(&SOURCES[2], r#"{"schema":9,"hits":[]}"#), old);
         assert_eq!(parse(&SOURCES[2], r#"{"hits":[]}"#), old);
+    }
+
+    #[test]
+    fn matched_words_are_bold_and_the_rest_is_escaped() {
+        assert_eq!(
+            highlight_markup("Grace & Law <1>", "grace law"),
+            "<b>Grace</b> &amp; <b>Law</b> &lt;1&gt;"
+        );
+        assert_eq!(highlight_markup("Gracegrace", "GRACE"), "<b>Gracegrace</b>");
+        assert_eq!(highlight_markup("Plain", "zz"), "Plain");
+        assert_eq!(highlight_markup("Éclair", "é"), "<b>É</b>clair");
+        assert_eq!(highlight_markup("", "x"), "");
     }
 
     #[test]

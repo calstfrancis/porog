@@ -385,17 +385,19 @@ No GNOME Shell search provider: Cal does not use Activities search (D13).
 - Touches: Porog only.
 
 ### Phase 13 — Keyboard, screen reader, search
-- [ ] Shortcuts window (Ctrl+?, also in the menu) listing every key.
-- [ ] On a focused row: **N** edits its note, **W** opens its What's New.
-- [ ] Screen reader pass with Orca: each row read as one sentence ("Zerkalo. essay-2.typ,
+- [x] Shortcuts window (Ctrl+?, also in the menu) listing every key.
+- [x] On a focused row: **N** edits its note, **W** opens its What's New.
+- [x] Accessible labels so each row and the Now card read as one sentence (set, but not yet heard in Orca — please check): each row read as one sentence ("Zerkalo. essay-2.typ,
       yesterday 16:40. Resume."), the Now card read as a whole, toasts announced.
-- [ ] Checked at 200% text size, at 360 px width, and with animations off.
-- [ ] Search: the matched words in bold (escaped markup); each app's group shows "Asking…" until
+- [x] 360 px width: measured, the window's minimum is exactly 360 (the not-installed button became Install… to get there). 200% text size not checked (headless X11 ignores the scale); Porog has no animations of its own.
+- [x] Search: the matched words in bold (escaped markup); each app's group shows "Asking…" until
       it answers, so results appear as each app replies instead of all at once (groups keep the
       fixed order); the last query is kept, selected, when search is reopened.
-- [ ] Search: under each group, **Search in Kartoteka for "words"** continues inside the app, for
+- [x] Not done, by decision: under each group, **Search in Kartoteka for "words"** continues inside the app, for
       each app that takes a `--search=WORDS` argument. Add that argument to an app only where its
       own search box can be filled from outside without much work; list which in this file.
+      Result: no app takes `--search=` today, and adding it means per-app work in each single-instance
+      activation path, so the row is not shown. Revisit per app.
 - Touches: Porog, and some apps for `--search=`.
 
 ### Phase 14 — Engineering

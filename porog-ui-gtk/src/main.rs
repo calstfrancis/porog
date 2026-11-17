@@ -11,6 +11,7 @@ mod portal;
 mod now_area;
 mod row;
 mod search;
+mod shortcuts;
 mod suite;
 mod tray;
 mod welcome;
@@ -40,6 +41,7 @@ fn main() -> glib::ExitCode {
         .build();
     app.connect_startup(|app| {
         load_css();
+        app.set_accels_for_action("win.shortcuts", &["<Control>question", "<Control><Shift>slash"]);
         // Alt+1…5 open the five apps, in row order.
         for index in 0..APPS.len() {
             app.set_accels_for_action(

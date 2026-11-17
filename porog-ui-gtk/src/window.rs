@@ -308,6 +308,40 @@ pub fn build(app: &adw::Application) {
     row_action("app-news", AppRow::show_news);
     list.connect_row_activated(move |_, row| open_app.activate(Some(&row.index().to_variant())));
 
+    let shortcuts_action = gio::SimpleAction::new("shortcuts", None);
+    shortcuts_action.connect_activate({
+        let window = window.clone();
+        move |_, _| crate::shortcuts::show(&window)
+    });
+    window.add_action(&shortcuts_action);
+    // N and W act on the row that has the focus: its note, its What's New.
+    let row_keys = gtk::EventControllerKey::new();
+    row_keys.connect_key_pressed({
+        let rows = rows.clone();
+        let list = list.clone();
+        move |_, key, _, state| {
+            let modified = gtk::gdk::ModifierType::CONTROL_MASK
+                | gtk::gdk::ModifierType::ALT_MASK
+                | gtk::gdk::ModifierType::SUPER_MASK;
+            if state.intersects(modified) {
+                return glib::Propagation::Proceed;
+            }
+            let Some(row) = list
+                .focus_child()
+                .and_downcast::<gtk::ListBoxRow>()
+                .and_then(|row| rows.get(usize::try_from(row.index()).ok()?))
+            else {
+                return glib::Propagation::Proceed;
+            };
+            match key {
+                gtk::gdk::Key::n | gtk::gdk::Key::N => row.edit_note(),
+                gtk::gdk::Key::w | gtk::gdk::Key::W => row.show_news(),
+                _ => return glib::Propagation::Proceed,
+            }
+            glib::Propagation::Stop
+        }
+    });
+    list.add_controller(row_keys);
     let show_changelog = gio::SimpleAction::new("changelog", None);
     show_changelog.connect_activate({
         let window = window.clone();

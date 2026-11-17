@@ -12,13 +12,25 @@ use gtk::{gio, glib};
 use gtk4 as gtk;
 use libadwaita as adw;
 
-use porog_core::search::{self, Answer, Group, Hit};
-use porog_core::App;
+use porog_core::search::{self, Answer, Hit};
+use porog_core::{App, APPS};
 
 use crate::window::launch;
 
 /// How long typing must pause before the apps are asked: each question starts a process.
 const PAUSE_MS: u32 = 450;
+
+thread_local! {
+    /// The last words typed, put back (and selected) when the box is opened again.
+    static LAST_QUERY: RefCell<String> = const { RefCell::new(String::new()) };
+}
+
+/// Where a result row goes: the row, the app, and the arguments that open it there.
+type Target = (gtk::ListBoxRow, &'static App, Vec<String>);
+
+/// The rows of each app's group in the list, in app order, so one group can be replaced when its
+/// app answers without moving the others.
+type Groups = Rc<RefCell<Vec<Vec<gtk::ListBoxRow>>>>;
 
 pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: &str) {
     let entry = gtk::SearchEntry::builder()
@@ -38,7 +50,7 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
         .margin_top(6)
         .margin_bottom(6)
         .css_classes(["caption", "fond-quiet"])
-        .label("Type two or more letters, then pause.")
+        .label(HINT)
         .build();
     let list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::Single)
@@ -71,6 +83,8 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
     // Set when the question it belongs to is replaced or the window closes: the helpers
     // still running for it are then killed instead of left to finish.
     let cancel: Rc<RefCell<Arc<AtomicBool>>> = Rc::default();
+    let targets: Rc<RefCell<Vec<Target>>> = Rc::default();
+    let groups: Groups = Rc::default();
 
     entry.connect_search_changed({
         let list = list.clone();
@@ -78,6 +92,8 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
         let latest = latest.clone();
         let pending = pending.clone();
         let cancel = cancel.clone();
+        let targets = targets.clone();
+        let groups = groups.clone();
         move |entry| {
             if let Some(id) = pending.take() {
                 id.remove();
@@ -86,11 +102,12 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
             let token = Arc::new(AtomicBool::new(false));
             *cancel.borrow_mut() = token.clone();
             let query = entry.text().to_string();
+            LAST_QUERY.with(|last| *last.borrow_mut() = query.clone());
             let number = latest.get() + 1;
             latest.set(number);
-            clear(&list);
+            clear(&list, &targets, &groups);
             if !search::is_askable(&query) {
-                line.set_label("Type two or more letters, then pause.");
+                line.set_label(HINT);
                 return;
             }
             line.set_label("Searching…");
@@ -100,18 +117,11 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
                     let line = line.clone();
                     let latest = latest.clone();
                     let pending = pending.clone();
+                    let targets = targets.clone();
+                    let groups = groups.clone();
                     move || {
                         pending.set(None);
-                        glib::spawn_future_local(async move {
-                            let groups = gio::spawn_blocking(move || {
-                                search::search_until(&query, &token)
-                            })
-                            .await
-                            .unwrap_or_default();
-                            if latest.get() == number {
-                                fill(&list, &line, &groups);
-                            }
-                        });
+                        ask_all(&query, number, &token, &latest, &list, &line, &targets, &groups);
                     }
                 });
             pending.set(Some(id));
@@ -121,11 +131,17 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
     let open = {
         let window = window.clone();
         let toasts = toasts.clone();
+        let targets = targets.clone();
         move |row: &gtk::ListBoxRow| {
-            let Some(target) = row_target(row) else {
+            let target = targets
+                .borrow()
+                .iter()
+                .find(|(r, _, _)| r == row)
+                .map(|(_, app, args)| (*app, args.clone()));
+            let Some((app, args)) = target else {
                 return;
             };
-            launch(target.0, target.1, &toasts);
+            launch(app, args, &toasts);
             window.close();
         }
     };
@@ -174,7 +190,6 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
         }
     });
     window.add_controller(escape);
-
     window.connect_close_request({
         let cancel = cancel.clone();
         move |_| {
@@ -185,26 +200,83 @@ pub fn show(parent: &adw::ApplicationWindow, toasts: &adw::ToastOverlay, query: 
 
     window.present();
     entry.grab_focus();
-    // Words given up front (`porog --search=WORDS`) are asked at once.
-    if !query.trim().is_empty() {
-        entry.set_text(query.trim());
+    // Words given up front (`porog --search=WORDS`) are asked at once; otherwise the last
+    // words typed come back, selected, so typing replaces them and Enter asks again.
+    let given = query.trim();
+    if !given.is_empty() {
+        entry.set_text(given);
         entry.set_position(-1);
+    } else {
+        let last = LAST_QUERY.with(|last| last.borrow().clone());
+        if !last.is_empty() {
+            entry.set_text(&last);
+            entry.select_region(0, -1);
+        }
     }
 }
 
-fn clear(list: &gtk::ListBox) {
+const HINT: &str = "Type two or more letters, then pause.";
+
+/// Ask every app, showing each group as soon as its app answers. Until then a group says
+/// "Asking…", so the groups are all there, in order, from the first moment.
+#[allow(clippy::too_many_arguments)]
+fn ask_all(
+    query: &str,
+    number: u32,
+    token: &Arc<AtomicBool>,
+    latest: &Rc<Cell<u32>>,
+    list: &gtk::ListBox,
+    line: &gtk::Label,
+    targets: &Rc<RefCell<Vec<Target>>>,
+    groups: &Groups,
+) {
+    for app in APPS.iter() {
+        let rows = vec![heading_row(app.name), note_row("Asking…")];
+        rows.iter().for_each(|row| list.append(row));
+        groups.borrow_mut().push(rows);
+    }
+    let waiting = Rc::new(Cell::new(APPS.len()));
+    let found = Rc::new(Cell::new(0usize));
+    for index in 0..APPS.len() {
+        let query = query.to_string();
+        let token = token.clone();
+        let latest = latest.clone();
+        let (list, line) = (list.clone(), line.clone());
+        let (targets, groups) = (targets.clone(), groups.clone());
+        let (waiting, found) = (waiting.clone(), found.clone());
+        glib::spawn_future_local(async move {
+            let asked = query.clone();
+            let group = gio::spawn_blocking(move || search::ask_app(index, &asked, &token))
+                .await
+                .ok();
+            if latest.get() != number {
+                return;
+            }
+            if let Some(group) = group {
+                found.set(found.get() + replace_group(index, &group, &query, &list, &targets, &groups));
+            }
+            waiting.set(waiting.get() - 1);
+            line.set_label(&summary(found.get(), waiting.get()));
+        });
+    }
+}
+
+fn summary(found: usize, waiting: usize) -> String {
+    let still = if waiting > 0 { " Still asking…" } else { "" };
+    match found {
+        0 if waiting > 0 => "Searching…".to_string(),
+        0 => "Nothing found.".to_string(),
+        1 => format!("1 result. Enter opens it.{still}"),
+        n => format!("{n} results. Enter opens the first; Down moves through them.{still}"),
+    }
+}
+
+fn clear(list: &gtk::ListBox, targets: &Rc<RefCell<Vec<Target>>>, groups: &Groups) {
     while let Some(row) = list.row_at_index(0) {
         list.remove(&row);
     }
-}
-
-/// What a result row opens: stored on the row so activation needs no lookup table.
-fn row_target(row: &gtk::ListBoxRow) -> Option<(&'static App, Vec<String>)> {
-    // SAFETY: only `append_hit` sets this key, always to a `(&'static App, Vec<String>)`.
-    unsafe {
-        row.data::<(&'static App, Vec<String>)>("porog-target")
-            .map(|target| target.as_ref().clone())
-    }
+    targets.borrow_mut().clear();
+    groups.borrow_mut().clear();
 }
 
 fn first_hit(list: &gtk::ListBox) -> Option<gtk::ListBoxRow> {
@@ -213,28 +285,47 @@ fn first_hit(list: &gtk::ListBox) -> Option<gtk::ListBoxRow> {
         .find(|row| row.is_activatable())
 }
 
-fn fill(list: &gtk::ListBox, line: &gtk::Label, groups: &[Group]) {
-    clear(list);
-    let mut found = 0;
-    for group in groups {
-        append_heading(list, group.app.name);
-        match &group.answer {
-            Answer::Hits(hits) if hits.is_empty() => append_note(list, "Nothing found."),
-            Answer::Hits(hits) => {
-                found += hits.len();
-                hits.iter().for_each(|hit| append_hit(list, group.app, hit));
-            }
-            Answer::Message(message) => append_note(list, message),
-        }
+/// Swap one group's rows for its app's answer, in place. Returns how many results it has.
+fn replace_group(
+    index: usize,
+    group: &search::Group,
+    query: &str,
+    list: &gtk::ListBox,
+    targets: &Rc<RefCell<Vec<Target>>>,
+    groups: &Groups,
+) -> usize {
+    let mut groups = groups.borrow_mut();
+    let Some(old) = groups.get(index).cloned() else {
+        return 0;
+    };
+    let position: i32 = groups[..index].iter().map(|g| g.len() as i32).sum();
+    for row in &old {
+        list.remove(row);
     }
-    line.set_label(&match found {
-        0 => "Nothing found.".to_string(),
-        1 => "1 result. Enter opens it.".to_string(),
-        n => format!("{n} results. Enter opens the first; Down moves through them."),
-    });
+    let mut rows = vec![heading_row(group.app.name)];
+    let mut count = 0;
+    match &group.answer {
+        Answer::Hits(hits) if hits.is_empty() => rows.push(note_row("Nothing found.")),
+        Answer::Hits(hits) => {
+            count = hits.len();
+            for hit in hits {
+                let row = hit_row(hit, query);
+                targets
+                    .borrow_mut()
+                    .push((row.clone(), group.app, hit.args.clone()));
+                rows.push(row);
+            }
+        }
+        Answer::Message(message) => rows.push(note_row(message)),
+    }
+    for (offset, row) in rows.iter().enumerate() {
+        list.insert(row, position + offset as i32);
+    }
+    groups[index] = rows;
+    count
 }
 
-fn append_heading(list: &gtk::ListBox, name: &str) {
+fn heading_row(name: &str) -> gtk::ListBoxRow {
     let label = gtk::Label::builder()
         .label(name)
         .xalign(0.0)
@@ -243,15 +334,14 @@ fn append_heading(list: &gtk::ListBox, name: &str) {
         .margin_bottom(2)
         .css_classes(["heading"])
         .build();
-    let row = gtk::ListBoxRow::builder()
+    gtk::ListBoxRow::builder()
         .child(&label)
         .activatable(false)
         .selectable(false)
-        .build();
-    list.append(&row);
+        .build()
 }
 
-fn append_note(list: &gtk::ListBox, text: &str) {
+fn note_row(text: &str) -> gtk::ListBoxRow {
     let label = gtk::Label::builder()
         .label(text)
         .xalign(0.0)
@@ -261,15 +351,15 @@ fn append_note(list: &gtk::ListBox, text: &str) {
         .margin_bottom(6)
         .css_classes(["fond-row-detail"])
         .build();
-    let row = gtk::ListBoxRow::builder()
+    gtk::ListBoxRow::builder()
         .child(&label)
         .activatable(false)
         .selectable(false)
-        .build();
-    list.append(&row);
+        .build()
 }
 
-fn append_hit(list: &gtk::ListBox, app: &'static App, hit: &Hit) {
+/// A result: its title, and its detail, with the words searched for in bold.
+fn hit_row(hit: &Hit, query: &str) -> gtk::ListBoxRow {
     let content = gtk::Box::new(gtk::Orientation::Vertical, 0);
     content.set_margin_start(12);
     content.set_margin_end(12);
@@ -277,7 +367,8 @@ fn append_hit(list: &gtk::ListBox, app: &'static App, hit: &Hit) {
     content.set_margin_bottom(4);
     content.append(
         &gtk::Label::builder()
-            .label(&hit.title)
+            .use_markup(true)
+            .label(search::highlight_markup(&hit.title, query))
             .xalign(0.0)
             .ellipsize(gtk::pango::EllipsizeMode::End)
             .css_classes(["fond-row-title"])
@@ -286,7 +377,8 @@ fn append_hit(list: &gtk::ListBox, app: &'static App, hit: &Hit) {
     if !hit.detail.is_empty() {
         content.append(
             &gtk::Label::builder()
-                .label(&hit.detail)
+                .use_markup(true)
+                .label(search::highlight_markup(&hit.detail, query))
                 .xalign(0.0)
                 .ellipsize(gtk::pango::EllipsizeMode::End)
                 .css_classes(["fond-row-detail"])
@@ -294,7 +386,11 @@ fn append_hit(list: &gtk::ListBox, app: &'static App, hit: &Hit) {
         );
     }
     let row = gtk::ListBoxRow::builder().child(&content).build();
-    // SAFETY: read back only by `row_target`, with the same type.
-    unsafe { row.set_data("porog-target", (app, hit.args.clone())) };
-    list.append(&row);
+    let spoken = if hit.detail.is_empty() {
+        hit.title.clone()
+    } else {
+        format!("{}. {}", hit.title, hit.detail)
+    };
+    row.update_property(&[gtk::accessible::Property::Label(&spoken)]);
+    row
 }

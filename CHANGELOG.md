@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Added
+- **Keyboard and screen reader.** Ctrl+? lists every shortcut; N on a focused row opens its note, W its What's
+  New. Each row and the Now card are announced as one sentence ("Zerkalo. An Example Essay · today 16:40.
+  Resume."). The window now fits down to 360 px wide.
+- **Search shows each app as it answers.** Every app's group is there at once, saying "Asking…", and fills in as
+  its app replies, so a slow one no longer holds the rest back. The words you searched for are in bold, and
+  reopening the box brings back your last words, selected.
 - **"Not installed" leads somewhere.** The button on an app that is not installed says *How to install* and
   opens the two commands to run, with *Copy commands* and *Open in Software*.
 - **The suite.** Menu → *The suite* lists each app with its installed version and whether it answers each thing

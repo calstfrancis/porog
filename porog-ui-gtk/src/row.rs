@@ -24,6 +24,10 @@ type ChangedHook = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
 pub(crate) struct AppRow {
     app: &'static App,
     index: usize,
+    /// The whole row, which a screen reader announces as one sentence.
+    widget: gtk::ListBoxRow,
+    /// The pencil that opens the note box; the N key presses it.
+    note_button: gtk::MenuButton,
     /// The app's name. Always opens the app plainly, whatever the button says.
     name: gtk::Button,
     /// Opens that app's What's New. The same icon on every row, whatever is in it.
@@ -85,7 +89,7 @@ impl AppRow {
         let primary = gtk::Button::builder()
             .label("Open")
             .valign(gtk::Align::Center)
-            .width_request(126)
+            .width_request(96)
             .build();
         primary.connect_clicked(move |primary| {
             let _ = primary.activate_action("win.open-app", Some(&(index as i32).to_variant()));
@@ -130,6 +134,8 @@ impl AppRow {
         let row = Self {
             app,
             index,
+            widget: widget.clone(),
+            note_button: edit.clone(),
             name,
             news,
             detail,
@@ -212,7 +218,7 @@ impl AppRow {
         let (text, label, hint) = match state.resume.first() {
             _ if !state.installed => (
                 "Not installed".to_string(),
-                "How to install",
+                "Install…",
                 format!("{} is not installed: show how to install it", app.name),
             ),
             Some(first) => (
@@ -231,6 +237,10 @@ impl AppRow {
         };
         self.detail.set_label(&text);
         self.detail.set_tooltip_text(Some(&text));
+        // One sentence for a screen reader: "Zerkalo. An Example Essay · today 16:40. Resume."
+        let spoken = format!("{}. {text}. {label}.", app.name);
+        self.widget
+            .update_property(&[gtk::accessible::Property::Label(&spoken)]);
         let context = state
             .resume
             .first()
@@ -283,7 +293,7 @@ impl AppRow {
         let resume = gtk::Button::builder()
             .label("Resume")
             .valign(gtk::Align::Center)
-            .width_request(126)
+            .width_request(96)
             .tooltip_text(&hint)
             .css_classes(["flat"])
             .build();
@@ -378,6 +388,11 @@ impl AppRow {
             });
             row.primary.set_sensitive(true);
         });
+    }
+
+    /// Open the note box, as the pencil does.
+    pub(crate) fn edit_note(&self) {
+        self.note_button.popup();
     }
 
     /// Open this app's What's New window.

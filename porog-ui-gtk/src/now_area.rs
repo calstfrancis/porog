@@ -17,6 +17,8 @@ use crate::window::launch_then;
 /// keeps its height whatever it shows, so the rows below never move (P1).
 #[derive(Clone)]
 pub(crate) struct NowArea {
+    /// The whole card, announced by a screen reader as one thing.
+    card: gtk::Box,
     title: gtk::Label,
     detail: gtk::Label,
     footer: gtk::Label,
@@ -124,6 +126,7 @@ impl NowArea {
         line.set_margin_bottom(8);
         card.add_css_class("card");
         let area = Self {
+            card: card.clone(),
             title,
             detail,
             footer,
@@ -173,6 +176,14 @@ impl NowArea {
         self.detail.set_visible(!detail.is_empty());
         self.footer.set_label(footer.unwrap_or(""));
         self.footer.set_visible(footer.is_some());
+        let spoken = [Some("Now, from Sputnik"), Some(title), Some(detail), footer]
+            .into_iter()
+            .flatten()
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(". ");
+        self.card
+            .update_property(&[gtk::accessible::Property::Label(&spoken)]);
     }
 
     /// Replace the "what is due next" lines, one label each.
