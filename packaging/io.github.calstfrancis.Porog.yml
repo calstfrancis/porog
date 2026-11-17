@@ -17,9 +17,9 @@ finish-args:
   # `host_flatpak_command`) — the same grant Kartoteka and Sputnik carry to start Pereplyot.
   - --talk-name=org.freedesktop.Flatpak
   # The optional tray icon (Phase 11): a StatusNotifierItem, shown by whatever watches for them
-  # (GNOME needs the AppIndicator extension).
+  # (GNOME needs the AppIndicator extension). The item registers under its unique bus name, so
+  # no name needs owning (flatpak rejects a wildcard --own-name).
   - --talk-name=org.kde.StatusNotifierWatcher
-  - --own-name=org.kde.StatusNotifierItem-*
   # The status files the Fond apps write (PLAN.md §3.1). `:create` because flatpak
   # skips a path that does not exist yet, and no app may have written one so far.
   - --filesystem=xdg-data/fond:create
