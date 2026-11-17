@@ -4,12 +4,14 @@
 //! (Resume, the Now card, Ctrl+K search) and for the rules the layout follows.
 
 mod changelog;
+mod install;
 mod menu;
 mod news;
 mod portal;
 mod now_area;
 mod row;
 mod search;
+mod suite;
 mod tray;
 mod welcome;
 mod window;

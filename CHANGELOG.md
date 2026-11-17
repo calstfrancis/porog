@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- **"Not installed" leads somewhere.** The button on an app that is not installed says *How to install* and
+  opens the two commands to run, with *Copy commands* and *Open in Software*.
+- **The suite.** Menu → *The suite* lists each app with its installed version and whether it answers each thing
+  Porog asks of it (status file, Sputnik's Now card, search, What's New), found by asking. A thing an app does
+  not answer says what to update.
+- **A first run that fits what is installed.** The Welcome window lists the five apps, which are installed,
+  and what each row will show once you have used the app.
 - **A system tray icon, if you want one.** The menu's *Show in system tray* puts Porog's icon in the tray. Its
   menu is Show Porog, one line per app saying what the row's button says ("Resume Zerkalo — essay-2.typ"),
   Search… and Quit. With the icon on, closing the window only hides it and Porog keeps running; turning it off

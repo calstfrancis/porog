@@ -85,7 +85,7 @@ impl AppRow {
         let primary = gtk::Button::builder()
             .label("Open")
             .valign(gtk::Align::Center)
-            .width_request(88)
+            .width_request(126)
             .build();
         primary.connect_clicked(move |primary| {
             let _ = primary.activate_action("win.open-app", Some(&(index as i32).to_variant()));
@@ -212,8 +212,8 @@ impl AppRow {
         let (text, label, hint) = match state.resume.first() {
             _ if !state.installed => (
                 "Not installed".to_string(),
-                "Open",
-                format!("{} is not installed", app.name),
+                "How to install",
+                format!("{} is not installed: show how to install it", app.name),
             ),
             Some(first) => (
                 status::describe(first, now),
@@ -247,7 +247,7 @@ impl AppRow {
         };
         if !self.starting.get() {
             self.primary.set_label(label);
-            self.primary.set_sensitive(state.installed);
+            self.primary.set_sensitive(true);
         }
         self.primary
             .set_tooltip_text(Some(&format!("{hint} ({shortcut})")));
@@ -283,7 +283,7 @@ impl AppRow {
         let resume = gtk::Button::builder()
             .label("Resume")
             .valign(gtk::Align::Center)
-            .width_request(88)
+            .width_request(126)
             .tooltip_text(&hint)
             .css_classes(["flat"])
             .build();
@@ -371,10 +371,12 @@ impl AppRow {
         let row = self.clone();
         launch_then(self.app, args, &self.toasts, move || {
             row.starting.set(false);
-            let state = row.state.borrow();
-            row.primary
-                .set_label(if state.resume.is_empty() { "Open" } else { "Resume" });
-            row.primary.set_sensitive(state.installed);
+            row.primary.set_label(if row.state.borrow().resume.is_empty() {
+                "Open"
+            } else {
+                "Resume"
+            });
+            row.primary.set_sensitive(true);
         });
     }
 
@@ -385,11 +387,11 @@ impl AppRow {
         }
     }
 
+    /// The app is not there: say how to get it instead of only saying it is missing.
     fn say_not_installed(&self) {
-        self.toasts.add_toast(adw::Toast::new(&format!(
-            "{} is not installed.",
-            self.app.name
-        )));
+        if let Some(parent) = self.primary.root().and_downcast::<gtk::Window>() {
+            crate::install::show(&parent, self.app);
+        }
     }
 }
 

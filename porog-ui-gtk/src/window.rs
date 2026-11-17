@@ -271,7 +271,7 @@ pub fn build(app: &adw::Application) {
     let window = adw::ApplicationWindow::builder()
         .application(app)
         .title("Porog")
-        .default_width(560)
+        .default_width(620)
         .default_height(680)
         .content(&view)
         .build();
@@ -333,6 +333,12 @@ pub fn build(app: &adw::Application) {
     });
     window.add_action(&search_for);
     app.set_accels_for_action("win.search", &["<Control>k"]);
+    let suite_action = gio::SimpleAction::new("suite", None);
+    suite_action.connect_activate({
+        let window = window.clone();
+        move |_, _| crate::suite::show(&window)
+    });
+    window.add_action(&suite_action);
     let whats_new = gio::SimpleAction::new("whats-new", None);
     whats_new.connect_activate({
         let window = window.clone();

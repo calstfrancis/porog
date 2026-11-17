@@ -199,10 +199,12 @@ pub fn build(
     rows.append(&tray_note);
     rows.append(&popover_separator());
 
+    let suite = popover_button("The suite");
     let whats_new = popover_button("What's New");
     let changelog = popover_button("Changelog");
     let about = popover_button("About Porog");
     for (row, action) in [
+        (&suite, "suite"),
         (&whats_new, "whats-new"),
         (&changelog, "changelog"),
         (&about, "about"),

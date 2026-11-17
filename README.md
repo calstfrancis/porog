@@ -21,7 +21,7 @@ for yourself that shows under that row until you clear it. Drop a PDF or EPUB on
 Pereplyot, or a `.typ` file to edit it in Zerkalo. The `details` word in the status bar shows the
 last three things per app. A button reads "Starting…" until its app is running.
 
-The menu (top right) has the System / Light / Dark theme choice, the changelog and About.
+The menu (top right) has the System / Light / Dark theme choice, *The suite* (each app's version and what it answers), the changelog and About.
 The version number at the bottom right also opens the changelog. The theme choice is kept
 in `~/.config/porog/config.json`.
 

@@ -10,6 +10,7 @@ pub mod helper;
 pub mod now;
 pub mod search;
 pub mod status;
+pub mod suite;
 pub mod whats_new;
 
 use std::io;
@@ -25,6 +26,9 @@ pub struct App {
     /// What the app is for, in plain words. Shown when there is nothing to resume.
     pub purpose: &'static str,
     pub flatpak_id: &'static str,
+    /// What the row will show once the app has been used, for the first-run welcome:
+    /// "your last document", not a promise about anything else.
+    pub first_use: &'static str,
     /// The app's name in its status file: `~/.local/share/fond/status/<status_name>.json`.
     pub status_name: &'static str,
 }
@@ -37,30 +41,35 @@ pub const APPS: [App; 5] = [
         name: "Sputnik",
         purpose: "Courses and schedule",
         flatpak_id: "io.github.calstfrancis.Sputnik",
+        first_use: "the week you are in, and what is due next",
         status_name: "sputnik",
     },
     App {
         name: "Pereplyot",
         purpose: "Reading",
         flatpak_id: "io.github.calstfrancis.Pereplyot",
+        first_use: "the last document you read, and the page you were on",
         status_name: "pereplyot",
     },
     App {
         name: "Kartoteka",
         purpose: "References",
         flatpak_id: "io.github.calstfrancis.Kartoteka",
+        first_use: "how many references your library holds",
         status_name: "kartoteka",
     },
     App {
         name: "Zerkalo",
         purpose: "Writing",
         flatpak_id: "io.github.calstfrancis.Zerkalo",
+        first_use: "the last document you wrote, and where in it you were",
         status_name: "zerkalo",
     },
     App {
         name: "Skrizhal",
         purpose: "CV elements",
         flatpak_id: "io.github.calstfrancis.Skrizhal",
+        first_use: "how many CV entries you have",
         status_name: "skrizhal",
     },
 ];
@@ -145,6 +154,38 @@ pub fn launch_command(app: &App, args: &[String], sandboxed: bool) -> Command {
     cmd
 }
 
+/// The remote Fond apps are installed from.
+pub const REMOTE_URL: &str = "https://calstfrancis.github.io/flatpak/calstfrancis.flatpakrepo";
+
+/// The two commands that install `app` on a machine that has not got it, for the "How to
+/// install" dialog to show and copy. The first is harmless to run twice.
+pub fn install_commands(app: &App) -> String {
+    format!(
+        "flatpak remote-add --user --if-not-exists calstfrancis {REMOTE_URL}\nflatpak install --user calstfrancis {}",
+        app.flatpak_id
+    )
+}
+
+/// The version of `app` that is installed: the `Version:` line of `flatpak info`. `None` when
+/// it is not installed or the line is missing. Blocks, so call it from a worker thread.
+pub fn installed_version(app: &App) -> Option<String> {
+    let output = host_flatpak_command(in_flatpak_sandbox())
+        .args(["info", app.flatpak_id])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    output.status.success().then(|| version_in(&String::from_utf8_lossy(&output.stdout)))?
+}
+
+/// The value of the `Version:` line in `flatpak info` output.
+fn version_in(info: &str) -> Option<String> {
+    info.lines()
+        .find_map(|line| line.trim().strip_prefix("Version:"))
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+}
+
 /// Whether `app`'s flatpak is installed. Blocks while `flatpak info` runs.
 pub fn is_installed(app: &App) -> bool {
     host_flatpak_command(in_flatpak_sandbox())
@@ -214,6 +255,25 @@ mod tests {
             "Update Sputnik to 0.25.0 or later."
         );
         assert_eq!(update_hint(&APPS[1], Feature::Now), "Update Pereplyot.");
+    }
+
+    #[test]
+    fn the_install_commands_add_the_remote_then_the_app() {
+        let commands = install_commands(&APPS[3]);
+        let lines: Vec<_> = commands.lines().collect();
+        assert_eq!(lines.len(), 2);
+        assert!(lines[0].starts_with("flatpak remote-add --user --if-not-exists calstfrancis https://"));
+        assert_eq!(
+            lines[1],
+            "flatpak install --user calstfrancis io.github.calstfrancis.Zerkalo"
+        );
+    }
+
+    #[test]
+    fn the_version_is_read_from_flatpak_info() {
+        let info = "\nZerkalo - A Typst editor\n\n          ID: io.github.calstfrancis.Zerkalo\n         Ref: app/x/x86_64/stable\n     Version: 0.59.0\n      Branch: stable\n";
+        assert_eq!(version_in(info).as_deref(), Some("0.59.0"));
+        assert_eq!(version_in("ID: x\n"), None);
     }
 
     #[test]

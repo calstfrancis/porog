@@ -372,14 +372,14 @@ No GNOME Shell search provider: Cal does not use Activities search (D13).
 - Touches: Porog only.
 
 ### Phase 12 — The suite at a glance, and the first run
-- [ ] **"Not installed" leads somewhere.** The row's button becomes **How to install**, opening a
+- [x] **"Not installed" leads somewhere.** The row's button becomes **How to install**, opening a
       small dialog: the exact `flatpak install calstfrancis <id>` command with a Copy button, and
       **Open in Software** (`appstream://<id>`).
-- [ ] **A Suite window** (menu: "The suite"): one line per app with its installed version and,
+- [x] **A Suite window** (menu: "The suite"): one line per app with its installed version and,
       for each thing Porog can ask of it (status file, Now, search, What's New, context lines),
       whether it answers, found by asking, not by version guessing. Each missing one says the
       fix ("Update Zerkalo to 0.X or later"). Run off the main thread, on opening only (P4).
-- [ ] **A first run that fits what is installed.** The Welcome window lists the five apps with
+- [x] **A first run that fits what is installed.** The Welcome window lists the five apps with
       installed or not, and says plainly that rows fill in as each app is used ("Zerkalo will
       show your last document here once you have opened one").
 - Touches: Porog only.

@@ -81,6 +81,10 @@ pub fn show(parent: &adw::ApplicationWindow, first_run: bool) {
         ));
         style(&about);
         body.append(&about);
+        body.append(&section("Your apps"));
+        let apps = gtk::Box::new(gtk::Orientation::Vertical, 6);
+        body.append(&apps);
+        fill_apps(&apps);
         body.append(&section("Try this"));
         for (headline, detail) in TRY {
             body.append(&bullet(headline, detail));
@@ -106,6 +110,38 @@ pub fn show(parent: &adw::ApplicationWindow, first_run: bool) {
         move |_| window.close()
     });
     window.present();
+}
+
+/// The five apps with whether each is installed, and what its row will show once it has been
+/// used. Installed-ness is asked off the main thread, so the window opens at once.
+fn fill_apps(apps: &gtk::Box) {
+    let labels: Vec<gtk::Label> = porog_core::APPS
+        .iter()
+        .map(|app| {
+            let label = gtk::Label::new(Some(&format!("{} — looking…", app.name)));
+            style(&label);
+            apps.append(&label);
+            label
+        })
+        .collect();
+    for (app, label) in porog_core::APPS.iter().zip(labels) {
+        gtk::glib::spawn_future_local(async move {
+            let installed = gtk::gio::spawn_blocking(|| porog_core::is_installed(app))
+                .await
+                .unwrap_or(false);
+            label.set_label(&if installed {
+                format!(
+                    "{} is installed. Its row will show {} once you have used it.",
+                    app.name, app.first_use
+                )
+            } else {
+                format!(
+                    "{} is not installed. Its row's button says how to install it.",
+                    app.name
+                )
+            });
+        });
+    }
 }
 
 /// Updated at release time, with `RELEASE_NAME`.

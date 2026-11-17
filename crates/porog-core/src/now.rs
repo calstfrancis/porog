@@ -176,6 +176,14 @@ pub fn fetch() -> NowView {
     }
 }
 
+/// Whether Sputnik answers `sputnik-now` at all. "Sputnik has no vault yet." is an answer.
+pub fn answers() -> bool {
+    match helper::run(&APPS[0], "sputnik-now", &[], TIMEOUT) {
+        Outcome::Answer(text) => parse(&text) != NowView::Message(too_old_message()),
+        _ => false,
+    }
+}
+
 /// Turn Sputnik's reply into what to show. Anything that is not a reply Porog understands
 /// reads as an old Sputnik: showing nothing is better than showing a guess.
 pub fn parse(text: &str) -> NowView {

@@ -101,6 +101,19 @@ fn too_old_text(source: &Source) -> String {
     )
 }
 
+/// Whether `app` answers search at all, found by asking it something harmless. An error the app
+/// gives in its own words (a library that does not exist yet) is still an answer.
+pub fn answers(app: &App) -> bool {
+    let Some(source) = SOURCES.iter().find(|s| APPS[s.app] == *app) else {
+        return false;
+    };
+    let words = ["zz".to_string()];
+    match helper::run(app, source.command, &words, TIMEOUT) {
+        Outcome::Answer(text) => parse(source, &text) != Answer::Message(too_old_text(source)),
+        _ => false,
+    }
+}
+
 /// Whether `query` is worth asking: two or more characters once trimmed.
 pub fn is_askable(query: &str) -> bool {
     query.trim().chars().count() >= 2
