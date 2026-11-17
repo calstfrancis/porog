@@ -103,6 +103,11 @@ const MIN_VERSIONS: &[(&str, Feature, &str)] = &[
     ("kartoteka", Feature::Search, "0.24.0"),
     ("zerkalo", Feature::Search, "0.58.0"),
     ("skrizhal", Feature::Search, "0.5.0"),
+    ("zerkalo", Feature::WhatsNew, "0.60.0"),
+    ("pereplyot", Feature::WhatsNew, "0.25.0"),
+    ("kartoteka", Feature::WhatsNew, "0.25.0"),
+    ("sputnik", Feature::WhatsNew, "0.28.0"),
+    ("skrizhal", Feature::WhatsNew, "0.6.0"),
 ];
 
 /// What to do about an app that cannot answer `feature`: "Update Sputnik to 0.25.0 or later."
@@ -260,6 +265,10 @@ mod tests {
             "Update Sputnik to 0.25.0 or later."
         );
         assert_eq!(update_hint(&APPS[1], Feature::Now), "Update Pereplyot.");
+        assert_eq!(
+            update_hint(&APPS[1], Feature::WhatsNew),
+            "Update Pereplyot to 0.25.0 or later."
+        );
     }
 
     #[test]

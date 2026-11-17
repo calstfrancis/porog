@@ -13,7 +13,7 @@ use porog_core::config::Config;
 
 use crate::VERSION;
 
-pub(crate) const RELEASE_NAME: &str = "Left Note";
+pub(crate) const RELEASE_NAME: &str = "Steady Threshold";
 
 /// Show the window if this version has not been seen: the welcome the first time ever,
 /// What's New after an update.
@@ -147,16 +147,24 @@ fn fill_apps(apps: &gtk::Box) {
 /// Updated at release time, with `RELEASE_NAME`.
 const NEW: &[(&str, &str)] = &[
     (
-        "A note for each app",
-        "The pencil beside a row's button keeps one line for yourself, such as where you meant to pick up. It shows under the row until you clear it.",
+        "Where you were, in a line",
+        "Under a document's row, one line from the work itself: Zerkalo's heading and sentence, or your newest highlight in Pereplyot.",
     ),
     (
-        "Drop a file on the window",
-        "A PDF or EPUB opens in Pereplyot, a .typ file in Zerkalo.",
+        "What's new in each app",
+        "The small icon on every row opens that app's What's New. It never shows a dot or a count.",
     ),
     (
-        "What is due next",
-        "With details on, the Now card lists the next few dated things from Sputnik. It needs Sputnik 0.27.0.",
+        "A tray icon, if you want one",
+        "Turn it on in the menu. Closing the window then keeps Porog running, and the tray lists Resume or Open for each app.",
+    ),
+    (
+        "Keys and the command line",
+        "N and W act on the focused row, Ctrl+? lists every key, and porog --resume=zerkalo works from a shortcut.",
+    ),
+    (
+        "The suite, and a button that says it started",
+        "Menu → The suite shows what each app answers. Buttons read Starting… until the app is running, and Install… says how to get a missing app.",
     ),
 ];
 

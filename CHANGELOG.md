@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0] "Steady Threshold" — 2026-11-17 — The way back, made trustworthy
 
 ### Added
 - **Keyboard and screen reader.** Ctrl+? lists every shortcut; N on a focused row opens its note, W its What's

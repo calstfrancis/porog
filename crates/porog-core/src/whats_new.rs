@@ -138,6 +138,6 @@ mod tests {
             panic!("expected a message");
         };
         assert!(text.starts_with("This Pereplyot is too old to show what's new here."));
-        assert!(text.ends_with("Update Pereplyot."));
+        assert!(text.ends_with("Update Pereplyot to 0.25.0 or later."));
     }
 }

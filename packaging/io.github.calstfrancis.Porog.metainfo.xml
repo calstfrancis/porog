@@ -37,6 +37,14 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.5.0" date="2026-11-17">
+      <description>
+        <p>0.5.0 "Steady Threshold" — Porog now shows a line from your work under each document it offers to resume,
+        opens each app's What's New from its row, can live in the system tray, and can be reached from the
+        keyboard or a script. Buttons say when an app is starting, a missing app says how to install it, and
+        a new Suite window shows what each app answers.</p>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-11-17">
       <description>
         <p>0.4.0 "Left Note" — a one-line note for each app, drop a PDF, EPUB or .typ file on the
