@@ -16,6 +16,10 @@ shows Sputnik's Now card. Ctrl+K searches the whole suite; see `PLAN.md`.
 | Ctrl+K | Search the suite; Enter opens the first result |
 | Alt+1 … Alt+5 | The same, for Sputnik, Pereplyot, Kartoteka, Zerkalo, Skrizhal |
 
+Clicking an app's name always opens it plainly. The pencil beside a row's button leaves a one-line note
+for yourself that shows under that row until you clear it. Drop a PDF or EPUB on the window to read it in
+Pereplyot, or a `.typ` file to edit it in Zerkalo.
+
 Clicking an app's name always opens it plainly. The `details` word in the status bar shows the
 last three things per app.
 

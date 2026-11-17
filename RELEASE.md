@@ -1,4 +1,4 @@
-# Porog v0.3.0 "Ready Hand"
+# Porog v0.4.0 "Left Note"
 
 Install via Flatpak:
 
@@ -18,14 +18,14 @@ flatpak update io.github.calstfrancis.Porog
 
 ### What's new
 
-The Now card can now carry a button beside *Open Sputnik*. When Sputnik's current item is a reading it can open,
-*Start reading* opens the file in Pereplyot where you left off. When it is a paper assignment, *New essay* starts a
-blank document in Zerkalo named for the course and assignment. Sputnik decides which button, if any, goes with the
-item; Porog only runs it.
+**A note for each app.** The pencil beside a row's button keeps one line for yourself ("next: rewrite the intro"),
+shown in italics under the row until you clear it. It lives only in Porog's own settings.
 
-Needs Sputnik 0.26.0 and, for *New essay*, Zerkalo 0.59.0. With older versions the card looks as before.
+**Drop a file on the window.** A PDF or EPUB opens in Pereplyot and a `.typ` file in Zerkalo. Anything else, or
+several files at once, gets a short message instead of a guess.
 
----
+**What is due next.** With *details* on, the Now card also lists the next few dated things after the Now item, in
+Sputnik's own words. Needs Sputnik 0.27.0; without it the card looks as before.
 
 ### Full changelog
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0] "Left Note" — 2026-11-17 — Notes, dropped files, what is due next
+
+### Added
+- **A note for each app.** A pencil beside each row's button opens a one-line box: write what you meant to do
+  next ("next: rewrite the intro") and it shows in italics under that row until you clear it. It is yours:
+  kept in Porog's own settings, never sent to the app.
+- **Drop a file on the window.** A PDF or EPUB opens in Pereplyot and a `.typ` file in Zerkalo. Any other
+  file, or more than one, gets a short message instead of a guess.
+- **What is due next.** With `details` on, the Now card also lists up to three dated things after the Now
+  item, in Sputnik's own words. Needs Sputnik 0.27.0.
+- The window opens a little taller, so five rows and the extra lines fit.
+
 ## [0.3.0] "Ready Hand" — 2026-11-15 — Actions on the Now card
 
 ### Added

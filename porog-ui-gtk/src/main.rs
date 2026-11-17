@@ -23,6 +23,7 @@ const GLOBAL_CSS: &str = "
 .porog-rows { margin: 12px; }
 .porog-rows row.fond-row > box { padding-left: 4px; padding-right: 8px; }
 .porog-name { padding-left: 8px; padding-right: 0; }
+.porog-note { font-style: italic; }
 ";
 
 fn main() -> glib::ExitCode {

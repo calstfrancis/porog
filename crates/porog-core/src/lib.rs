@@ -62,6 +62,18 @@ pub const APPS: [App; 5] = [
     },
 ];
 
+/// The app that opens a dropped file, by its extension: PDFs and EPUBs in Pereplyot, Typst
+/// files in Zerkalo. Anything else has no app, and Porog says so instead of guessing.
+pub fn app_for_file(path: &Path) -> Option<&'static App> {
+    let extension = path.extension()?.to_str()?.to_ascii_lowercase();
+    let status_name = match extension.as_str() {
+        "pdf" | "epub" => "pereplyot",
+        "typ" => "zerkalo",
+        _ => return None,
+    };
+    APPS.iter().find(|app| app.status_name == status_name)
+}
+
 /// Whether this process is running inside a flatpak sandbox — `flatpak-spawn --host` only
 /// works, and is only needed, there; a non-flatpak install can just exec `flatpak` directly.
 pub fn in_flatpak_sandbox() -> bool {
@@ -130,6 +142,16 @@ mod tests {
             names,
             ["Sputnik", "Pereplyot", "Kartoteka", "Zerkalo", "Skrizhal"]
         );
+    }
+
+    #[test]
+    fn a_dropped_file_goes_to_the_app_that_opens_it() {
+        let app = |name: &str| app_for_file(Path::new(name)).map(|a| a.name);
+        assert_eq!(app("/home/me/Soskice.PDF"), Some("Pereplyot"));
+        assert_eq!(app("book.epub"), Some("Pereplyot"));
+        assert_eq!(app("essay-2.typ"), Some("Zerkalo"));
+        assert_eq!(app("refs.bib"), None);
+        assert_eq!(app("README"), None);
     }
 
     #[test]

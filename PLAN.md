@@ -212,6 +212,22 @@ Three literal outcomes when there is no item to show: "Nothing placed on today."
 - [ ] Not done: the study timer is not started by "Start reading" (Sputnik takes no commands); the
       real flatpak sandbox path; releases of Sputnik, Zerkalo and Porog.
 
+### Phase 6 — Re-entry helpers (Cal, 2026-11-16)
+- [x] A note for each app: one line in Porog's own config (`notes`, 160 characters), written from a
+      pencil button on the row and shown under it. Porog-only: no app reads it (P7), and nothing
+      expires or nags (P5). Adding one makes that row taller; Porog never does it for you (P1, P4).
+- [x] Drop a file on the window: PDF/EPUB → Pereplyot, `.typ` → Zerkalo, by extension
+      (`porog_core::app_for_file`). Anything else, or several files, gets a toast. Kartoteka and
+      Skrizhal take no file argument, so they are not drop targets.
+- [x] Sputnik's `--now` reply gains an optional `later` list (up to three `{title, detail}`: due soon,
+      then coming up, earliest first, without the Now item); Porog shows it under the card with
+      `details` on (P6).
+- [x] Tested headless with a stand-in `flatpak` and the dev builds: note saved and shown, `later` lines
+      shown, a dragged `.typ` started Zerkalo with its path, a dragged `.bib` got the toast.
+- [ ] Not done: the real flatpak sandbox. A file dropped on the sandboxed Porog arrives as a document-portal
+      path; whether the other app's sandbox can read that path is untested, and Porog's manifest has no
+      home access by design.
+
 ## 5. Decisions
 
 Settled 2026-11-10:

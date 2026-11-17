@@ -13,7 +13,7 @@ use porog_core::config::Config;
 
 use crate::VERSION;
 
-pub(crate) const RELEASE_NAME: &str = "Ready Hand";
+pub(crate) const RELEASE_NAME: &str = "Left Note";
 
 /// Show the window if this version has not been seen: the welcome the first time ever,
 /// What's New after an update.
@@ -109,10 +109,20 @@ pub fn show(parent: &adw::ApplicationWindow, first_run: bool) {
 }
 
 /// Updated at release time, with `RELEASE_NAME`.
-const NEW: &[(&str, &str)] = &[(
-    "Actions on the Now card",
-    "When Sputnik's Now item is a reading or a paper, the card gets a button beside Open Sputnik: Start reading opens it in Pereplyot, New essay starts a blank document in Zerkalo. It needs the current Sputnik and Zerkalo.",
-)];
+const NEW: &[(&str, &str)] = &[
+    (
+        "A note for each app",
+        "The pencil beside a row's button keeps one line for yourself, such as where you meant to pick up. It shows under the row until you clear it.",
+    ),
+    (
+        "Drop a file on the window",
+        "A PDF or EPUB opens in Pereplyot, a .typ file in Zerkalo.",
+    ),
+    (
+        "What is due next",
+        "With details on, the Now card lists the next few dated things from Sputnik. It needs Sputnik 0.27.0.",
+    ),
+];
 
 const TRY: &[(&str, &str)] = &[
     (

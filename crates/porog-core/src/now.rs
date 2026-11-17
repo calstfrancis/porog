@@ -30,6 +30,16 @@ pub struct NowAction {
     pub args: Vec<String>,
 }
 
+/// One of the next dated things after the Now item, in Sputnik's words.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LaterItem {
+    pub title: String,
+    pub detail: String,
+}
+
+/// How many `later` lines are kept, whatever Sputnik sends.
+const LATER_MAX: usize = 3;
+
 /// What the Now area shows.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NowView {
@@ -41,6 +51,8 @@ pub enum NowView {
         footer: Option<String>,
         /// "Start reading", "New essay": what Sputnik says can be done with the item.
         action: Option<NowAction>,
+        /// What comes next by date, shown only with `details` on.
+        later: Vec<LaterItem>,
     },
     /// One plain line: a literal outcome above, or Sputnik's own reason it has no card
     /// ("Sputnik has no vault yet.").
@@ -53,7 +65,17 @@ struct Reply {
     schema: u32,
     now: Option<Card>,
     action: Option<Action>,
+    #[serde(default)]
+    later: Vec<Later>,
     error: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Later {
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    detail: String,
 }
 
 #[derive(Deserialize)]
@@ -126,6 +148,16 @@ pub fn parse(text: &str) -> NowView {
         title: card.title,
         detail: card.detail,
         action: reply.action.and_then(Action::into_action),
+        later: reply
+            .later
+            .into_iter()
+            .filter(|l| !l.title.trim().is_empty())
+            .take(LATER_MAX)
+            .map(|l| LaterItem {
+                title: l.title,
+                detail: l.detail,
+            })
+            .collect(),
     }
 }
 
@@ -158,8 +190,30 @@ mod tests {
                 detail: "THM 501 · free for 40 min".to_string(),
                 footer: Some("2 more today · 1 needs a decision".to_string()),
                 action: None,
+                later: Vec::new(),
             }
         );
+    }
+
+    #[test]
+    fn later_items_are_kept_in_sputniks_words_and_capped() {
+        let reply = r#"{"schema":1,"now":{"title":"x"},"later":[
+            {"title":"Essay","detail":"THM 501 · due Fri Nov 20"},{"title":" "},
+            {"title":"b"},{"title":"c"},{"title":"d"}]}"#;
+        let NowView::Card { later, .. } = parse(reply) else {
+            panic!("expected a card");
+        };
+        let titles: Vec<_> = later.iter().map(|l| l.title.as_str()).collect();
+        assert_eq!(titles, ["Essay", "b", "c"]);
+        assert_eq!(later[0].detail, "THM 501 · due Fri Nov 20");
+    }
+
+    #[test]
+    fn a_reply_without_later_has_none() {
+        let NowView::Card { later, .. } = parse(r#"{"schema":1,"now":{"title":"x"}}"#) else {
+            panic!("expected a card");
+        };
+        assert!(later.is_empty());
     }
 
     #[test]
