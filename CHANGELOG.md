@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **The tray icon's left click drops down the list of installed Fond apps.** Click an app's name to open it or
+  switch to it; a line under it resumes what it was last doing. Apps that are not installed are no longer
+  listed. Search… and Quit stay at the bottom. The smoke test now reads the tray menu over D-Bus.
+
 ## [0.5.0] "Steady Threshold" — 2026-11-17 — The way back, made trustworthy
 
 ### Added

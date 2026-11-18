@@ -96,21 +96,20 @@ fn path_exists(path: &str, sandboxed: bool) -> bool {
         .unwrap_or(false)
 }
 
-/// One app's line in the tray menu, in the same words and by the same rule as its row's
-/// button (`PLAN.md` P3): "Resume Zerkalo — essay-2.typ" when the row would say Resume, else
-/// "Open Zerkalo". The flag says whether the line can be used: an app that is not installed
-/// reads "Zerkalo is not installed" and is greyed out.
-pub fn tray_line(app: &App, state: &RowState) -> (String, bool) {
-    if !state.installed {
-        return (format!("{} is not installed", app.name), false);
-    }
-    match state.resume.first() {
-        Some(first) => (
-            format!("Resume {} — {}", app.name, first.title.trim()),
-            true,
-        ),
-        None => (format!("Open {}", app.name), true),
-    }
+/// One app's place in the tray menu: its name, which opens or switches to it, and, when the
+/// first resume entry can be reopened, a second line to resume it (`PLAN.md` P3: the same words
+/// the row's button uses). `None` for an app that is not installed — the tray lists only what
+/// can be opened.
+pub fn tray_entry(app: &App, state: &RowState) -> Option<(String, Option<String>)> {
+    state.installed.then(|| {
+        (
+            app.name.to_string(),
+            state
+                .resume
+                .first()
+                .map(|first| format!("Resume — {}", first.title.trim())),
+        )
+    })
 }
 
 /// A moment with its UTC offset: what "today" and "yesterday" are measured from.
@@ -186,23 +185,23 @@ mod tests {
     }
 
     #[test]
-    fn the_tray_says_what_the_rows_button_says() {
+    fn the_tray_lists_installed_apps_and_offers_resume_when_there_is_one() {
         let app = &crate::APPS[3];
         let mut state = RowState {
             installed: true,
             ..RowState::default()
         };
-        assert_eq!(tray_line(app, &state), ("Open Zerkalo".to_string(), true));
+        assert_eq!(tray_entry(app, &state), Some(("Zerkalo".to_string(), None)));
         state.resume = vec![entry(" essay-2.typ ", &["/tmp/example/essay-2.typ"])];
         assert_eq!(
-            tray_line(app, &state),
-            ("Resume Zerkalo — essay-2.typ".to_string(), true)
+            tray_entry(app, &state),
+            Some((
+                "Zerkalo".to_string(),
+                Some("Resume — essay-2.typ".to_string())
+            ))
         );
         state.installed = false;
-        assert_eq!(
-            tray_line(app, &state),
-            ("Zerkalo is not installed".to_string(), false)
-        );
+        assert_eq!(tray_entry(app, &state), None);
     }
 
     #[test]

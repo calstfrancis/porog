@@ -167,7 +167,7 @@ pub fn build(app: &adw::Application) {
     let tray = Tray::new(app.upcast_ref());
     let lines: Rc<dyn Fn() -> Vec<Line>> = {
         let rows = rows.clone();
-        Rc::new(move || rows.iter().map(AppRow::tray_line).collect())
+        Rc::new(move || rows.iter().filter_map(AppRow::tray_line).collect())
     };
     // The tray menu follows the rows: whenever one is re-read, the menu is rewritten.
     for row in rows.iter() {
@@ -303,7 +303,7 @@ pub fn build(app: &adw::Application) {
         action
     };
     let open_app = row_action("open-app", AppRow::activate);
-    row_action("open-plain", AppRow::open_plain);
+    let open_plain = row_action("open-plain", AppRow::open_plain);
     let open_fresh = row_action("open-app-now", AppRow::activate_fresh);
     row_action("app-news", AppRow::show_news);
     list.connect_row_activated(move |_, row| open_app.activate(Some(&row.index().to_variant())));
@@ -403,6 +403,7 @@ pub fn build(app: &adw::Application) {
         let app = app.clone();
         move |cmd| match cmd {
             TrayCmd::Show => window.present(),
+            TrayCmd::Open(index) => open_plain.activate(Some(&(index as i32).to_variant())),
             TrayCmd::Row(index) => open_fresh.activate(Some(&(index as i32).to_variant())),
             TrayCmd::Search => {
                 window.present();

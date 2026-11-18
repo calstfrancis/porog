@@ -12,7 +12,8 @@ for tool in Xvfb dbus-run-session; do
 done
 W="$(mktemp -d)"
 trap 'kill "${XVFB:-0}" 2>/dev/null; rm -rf "$W"' EXIT
-mkdir -p "$W/bin" "$W/docs" "$W/status" "$W/config" "$W/home" "$W/data"
+mkdir -p "$W/bin" "$W/docs" "$W/status" "$W/config/porog" "$W/home" "$W/data"
+echo '{"tray": true}' >"$W/config/porog/config.json"
 : >"$W/docs/essay.typ"
 
 cat >"$W/bin/flatpak" <<FAKE
@@ -49,6 +50,9 @@ timeout 60 dbus-run-session --config-file="$W/session.conf" -- bash -c "
   sleep 6
   '$BIN' --resume=zerkalo
   sleep 2
+  for name in \$(busctl --user list --no-legend | awk '/^:/{print \$1}'); do
+    busctl --user call \"\$name\" /MenuBar com.canonical.dbusmenu GetLayout iias 0 5 0 2>/dev/null && break
+  done >'$W/tray-menu.out'
   '$BIN' --bogus >'$W/bogus.out' 2>&1; echo \$? >'$W/bogus.exit'
   pkill -TERM -P \$\$ -f '$BIN' 2>/dev/null; true
 "
@@ -58,5 +62,6 @@ check() { if grep -q -- "$2" "$W/flatpak.log"; then echo "ok   $1"; else echo "F
 check "asked Sputnik for the Now card" "--command=sputnik-now"
 check "--resume reached the running window and started Zerkalo" "run io.github.calstfrancis.Zerkalo $W/docs/essay.typ"
 if [ "$(cat "$W/bogus.exit" 2>/dev/null)" != 0 ]; then echo "ok   unknown option refused"; else echo "FAIL unknown option accepted"; fail=1; fi
+if grep -q 'Zerkalo' "$W/tray-menu.out" 2>/dev/null && grep -q 'Resume.*Essay' "$W/tray-menu.out"; then echo "ok   the tray menu lists installed apps, with a resume line"; else echo "FAIL tray menu"; cat "$W/tray-menu.out" 2>/dev/null | head -5; fail=1; fi
 if grep -q "panicked" "$W/porog.out"; then echo "FAIL the window panicked"; cat "$W/porog.out"; fail=1; else echo "ok   no panic"; fi
 exit $fail

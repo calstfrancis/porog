@@ -27,9 +27,10 @@ in `~/.config/porog/config.json`.
 
 ## From the tray and the command line
 
-*Show in system tray* in the menu (off by default) keeps an icon with Show Porog, a line per app
-("Resume Zerkalo — essay-2.typ" or "Open Kartoteka"), Search… and Quit. While it is on, closing the window
-hides it and Porog keeps running. GNOME shows tray icons only with the AppIndicator extension.
+*Show in system tray* in the menu (off by default) keeps an icon. A left click drops down a list: Show
+Porog, then each installed Fond app. Click an app's name to open it, or switch to it if it is already
+running; when it has something to resume, a line under it ("Resume — essay-2.typ") reopens that. Search… and
+Quit are at the bottom. While the icon is on, closing the window hides it and Porog keeps running. GNOME shows tray icons only with the AppIndicator extension.
 
 ```sh
 porog --resume=zerkalo   # what the Zerkalo row's button says: Resume or Open

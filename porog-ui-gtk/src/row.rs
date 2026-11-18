@@ -202,10 +202,14 @@ impl AppRow {
         *self.changed.borrow_mut() = Some(Rc::new(f));
     }
 
-    /// This row's line in the tray menu.
-    pub(crate) fn tray_line(&self) -> crate::tray::Line {
-        let (text, enabled) = status::tray_line(self.app, &self.state.borrow());
-        crate::tray::Line { text, enabled }
+    /// This row's place in the tray menu; `None` while the app is not installed.
+    pub(crate) fn tray_line(&self) -> Option<crate::tray::Line> {
+        let (text, resume) = status::tray_entry(self.app, &self.state.borrow())?;
+        Some(crate::tray::Line {
+            index: self.index,
+            text,
+            resume,
+        })
     }
 
     /// Put `state` on the row. The button says Resume only when the first entry can be

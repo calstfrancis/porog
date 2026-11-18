@@ -1,7 +1,9 @@
 //! The system tray icon (StatusNotifierItem), off unless the user turns it on in the menu.
 //!
-//! The icon is Porog's own and never changes (`PLAN.md` P5). Its menu is Show Porog, one line
-//! per app in row order saying what the row's button says (P3), Search…, and Quit. The tray
+//! The icon is Porog's own and never changes (`PLAN.md` P5). A left click drops the menu down
+//! (`item_is_menu`): Show Porog, then each installed app in row order — its name opens or
+//! switches to it, and a line under it resumes what it was last doing (P3) — then Search… and
+//! Quit. The tray
 //! runs on its own thread; its menu clicks come back to the GTK thread through
 //! [`set_handler`].
 
@@ -18,7 +20,9 @@ use ksni::MenuItem;
 /// What a click in the tray menu asks for.
 pub enum TrayCmd {
     Show,
-    /// Do what row N's button says: Resume or Open.
+    /// Open app N, or switch to it if it is already running.
+    Open(usize),
+    /// Resume app N's newest item, as its row's button does.
     Row(usize),
     Search,
     Quit,
@@ -48,8 +52,11 @@ fn send(cmd: TrayCmd) {
 /// One app's line in the tray menu.
 #[derive(Clone)]
 pub struct Line {
+    /// The app's row number, which is what a click sends back.
+    pub index: usize,
     pub text: String,
-    pub enabled: bool,
+    /// "Resume — title", when the app has something to resume.
+    pub resume: Option<String>,
 }
 
 struct PorogTray {
@@ -69,6 +76,9 @@ impl ksni::Tray for PorogTray {
         "io.github.calstfrancis.Porog".into()
     }
 
+    /// A left click drops the menu down instead of calling `activate` (SNI `ItemIsMenu`).
+    const MENU_ON_ACTIVATE: bool = true;
+
     fn activate(&mut self, _x: i32, _y: i32) {
         send(TrayCmd::Show);
     }
@@ -85,12 +95,32 @@ impl ksni::Tray for PorogTray {
         };
         let mut menu: Vec<MenuItem<Self>> = vec![item("Show Porog", true, || TrayCmd::Show)];
         menu.push(MenuItem::Separator);
-        for (index, line) in self.lines.iter().enumerate() {
+        for line in &self.lines {
+            let index = line.index;
             menu.push(
                 StandardItem {
                     label: line.text.clone(),
-                    enabled: line.enabled,
-                    activate: Box::new(move |_: &mut Self| send(TrayCmd::Row(index))),
+                    activate: Box::new(move |_: &mut Self| send(TrayCmd::Open(index))),
+                    ..Default::default()
+                }
+                .into(),
+            );
+            if let Some(resume) = &line.resume {
+                menu.push(
+                    StandardItem {
+                        label: format!("    {resume}"),
+                        activate: Box::new(move |_: &mut Self| send(TrayCmd::Row(index))),
+                        ..Default::default()
+                    }
+                    .into(),
+                );
+            }
+        }
+        if self.lines.is_empty() {
+            menu.push(
+                StandardItem {
+                    label: "No Fond apps are installed".into(),
+                    enabled: false,
                     ..Default::default()
                 }
                 .into(),
