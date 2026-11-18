@@ -13,7 +13,7 @@ use porog_core::config::Config;
 
 use crate::VERSION;
 
-pub(crate) const RELEASE_NAME: &str = "Steady Threshold";
+pub(crate) const RELEASE_NAME: &str = "Open Latch";
 
 /// Show the window if this version has not been seen: the welcome the first time ever,
 /// What's New after an update.
@@ -145,28 +145,10 @@ fn fill_apps(apps: &gtk::Box) {
 }
 
 /// Updated at release time, with `RELEASE_NAME`.
-const NEW: &[(&str, &str)] = &[
-    (
-        "Where you were, in a line",
-        "Under a document's row, one line from the work itself: Zerkalo's heading and sentence, or your newest highlight in Pereplyot.",
-    ),
-    (
-        "What's new in each app",
-        "The small icon on every row opens that app's What's New. It never shows a dot or a count.",
-    ),
-    (
-        "A tray icon, if you want one",
-        "Turn it on in the menu. Closing the window then keeps Porog running, and the tray lists Resume or Open for each app.",
-    ),
-    (
-        "Keys and the command line",
-        "N and W act on the focused row, Ctrl+? lists every key, and porog --resume=zerkalo works from a shortcut.",
-    ),
-    (
-        "The suite, and a button that says it started",
-        "Menu → The suite shows what each app answers. Buttons read Starting… until the app is running, and Install… says how to get a missing app.",
-    ),
-];
+const NEW: &[(&str, &str)] = &[(
+    "The tray icon is a list of your apps",
+    "With the tray icon on, a left click drops down each installed Fond app. Click a name to open it or switch to it; a line under it resumes what it was last doing.",
+)];
 
 const TRY: &[(&str, &str)] = &[
     (

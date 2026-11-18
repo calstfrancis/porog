@@ -37,6 +37,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.6.0" date="2026-11-18">
+      <description>
+        <p>0.6.0 "Open Latch" — with the system tray icon on, a left click drops down each installed
+        Fond app. Click a name to open it or switch to it; a line under it resumes what it was last
+        doing. Apps that are not installed are no longer listed.</p>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-11-17">
       <description>
         <p>0.5.0 "Steady Threshold" — Porog now shows a line from your work under each document it offers to resume,

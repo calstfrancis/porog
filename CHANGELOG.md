@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.0] "Open Latch" — 2026-11-18 — The tray icon is a list of your apps
 
 ### Changed
 - **The tray icon's left click drops down the list of installed Fond apps.** Click an app's name to open it or
