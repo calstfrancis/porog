@@ -19,6 +19,9 @@ use crate::window::launch_then;
 pub(crate) struct NowArea {
     /// The whole card, announced by a screen reader as one thing.
     card: gtk::Box,
+    /// The words and the buttons, side by side; a narrow window stacks them (`window.rs`).
+    pub(crate) layout: gtk::Box,
+    pub(crate) buttons: gtk::Box,
     title: gtk::Label,
     detail: gtk::Label,
     footer: gtk::Label,
@@ -37,11 +40,27 @@ type ActionTarget = Rc<RefCell<Option<(&'static App, Vec<String>)>>>;
 
 impl NowArea {
     pub(crate) fn new(toasts: &adw::ToastOverlay, details: Rc<Cell<bool>>) -> (gtk::Box, Self) {
-        let eyebrow = gtk::Label::builder()
-            .label("NOW  (from Sputnik)")
-            .xalign(0.0)
-            .css_classes(["caption-heading", "fond-quiet"])
-            .build();
+        // "● NOW  from Sputnik": the suite's section header. The dot is the window's one touch
+        // of colour, the ochre the suite's highlights use for the key idea.
+        let eyebrow = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+        eyebrow.add_css_class("fond-section");
+        eyebrow.set_margin_bottom(2);
+        let dot = gtk::Label::new(Some("●"));
+        dot.add_css_class("fond-section-dot");
+        dot.add_css_class("porog-ochre");
+        eyebrow.append(&dot);
+        eyebrow.append(
+            &gtk::Label::builder()
+                .label("Now")
+                .css_classes(["fond-section-title"])
+                .build(),
+        );
+        eyebrow.append(
+            &gtk::Label::builder()
+                .label("from Sputnik")
+                .css_classes(["fond-section-meta"])
+                .build(),
+        );
         let title = gtk::Label::builder()
             .xalign(0.0)
             .wrap(true)
@@ -73,7 +92,8 @@ impl NowArea {
             .margin_top(6)
             .visible(false)
             .build();
-        for label in [&eyebrow, &title, &detail, &footer] {
+        text.append(&eyebrow);
+        for label in [&title, &detail, &footer] {
             text.append(label);
         }
         text.append(&pieces);
@@ -84,10 +104,14 @@ impl NowArea {
             .tooltip_text("Open Sputnik")
             .action_name("win.open-plain")
             .action_target(&0i32.to_variant())
+            .css_classes(["porog-act", "porog-open"])
             .build();
+        // The item's own next step ("Write essay", "Start reading") wears Resume's soft fill:
+        // it is the one thing the card suggests.
         let action = gtk::Button::builder()
             .valign(gtk::Align::Center)
             .visible(false)
+            .css_classes(["porog-act", "porog-resume"])
             .build();
         let target = ActionTarget::default();
         action.connect_clicked({
@@ -107,26 +131,23 @@ impl NowArea {
                 });
             }
         });
+        let buttons = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+        buttons.set_valign(gtk::Align::Center);
+        buttons.append(&action);
+        buttons.append(&open);
         let line = gtk::Box::new(gtk::Orientation::Horizontal, 12);
         line.append(&text);
-        line.append(&action);
-        line.append(&open);
+        line.append(&buttons);
+        line.set_hexpand(true);
         let card = gtk::Box::builder()
-            .height_request(104)
-            .margin_start(12)
-            .margin_end(12)
-            .margin_top(8)
-            .margin_bottom(8)
+            .height_request(112)
+            .css_classes(["porog-card", "porog-now"])
             .build();
         card.append(&line);
-        line.set_hexpand(true);
-        line.set_margin_start(12);
-        line.set_margin_end(12);
-        line.set_margin_top(8);
-        line.set_margin_bottom(8);
-        card.add_css_class("card");
         let area = Self {
             card: card.clone(),
+            layout: line,
+            buttons,
             title,
             detail,
             footer,
@@ -234,7 +255,7 @@ impl NowArea {
                 .label("Open")
                 .valign(gtk::Align::Center)
                 .tooltip_text(&hint)
-                .css_classes(["flat"])
+                .css_classes(["flat", "porog-act-quiet"])
                 .build();
             open.update_property(&[gtk::accessible::Property::Label(&hint)]);
             open.connect_clicked({

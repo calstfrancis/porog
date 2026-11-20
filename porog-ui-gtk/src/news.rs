@@ -47,18 +47,7 @@ pub fn show(parent: &gtk::Window, app: &'static App) {
         .default_height(480)
         .content(&toolbar)
         .build();
-    let escape = gtk::EventControllerKey::new();
-    escape.connect_key_pressed({
-        let window = window.clone();
-        move |_, key, _, _| {
-            if key == gtk::gdk::Key::Escape {
-                window.close();
-                return glib::Propagation::Stop;
-            }
-            glib::Propagation::Proceed
-        }
-    });
-    window.add_controller(escape);
+    crate::welcome::close_on_escape(&window);
     window.present();
 
     glib::spawn_future_local(async move {

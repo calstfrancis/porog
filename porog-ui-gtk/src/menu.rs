@@ -17,16 +17,39 @@ use crate::tray::{Line, Tray};
 /// A flat, left-aligned popover row — same shape as every other Fond app's helper of the
 /// same name.
 fn popover_button(label: &str) -> gtk::Button {
-    let button = gtk::Button::new();
-    button.add_css_class("flat");
-    let lbl = gtk::Label::new(Some(label));
-    lbl.set_xalign(0.0);
-    lbl.set_halign(gtk::Align::Start);
-    button.set_child(Some(&lbl));
-    button
+    menu_item(label, None)
 }
 
-fn popover_separator() -> gtk::Separator {
+/// A popover row: its label flush left and, when it has one, its key flush right in a dim
+/// caption (Zerkalo's `make_menu_item`).
+pub(crate) fn menu_item(label: &str, shortcut: Option<&str>) -> gtk::Button {
+    let line = gtk::Box::new(gtk::Orientation::Horizontal, 24);
+    let text = gtk::Label::builder()
+        .label(label)
+        .xalign(0.0)
+        .hexpand(true)
+        .build();
+    line.append(&text);
+    if let Some(shortcut) = shortcut {
+        line.append(
+            &gtk::Label::builder()
+                .label(shortcut)
+                .css_classes(["caption", "dim-label"])
+                .build(),
+        );
+    }
+    gtk::Button::builder()
+        .child(&line)
+        .css_classes(["flat", "porog-menu-item"])
+        .build()
+}
+
+/// The label inside a [`menu_item`], to change its words later.
+pub(crate) fn menu_item_label(item: &gtk::Button) -> Option<gtk::Label> {
+    item.child()?.first_child()?.downcast().ok()
+}
+
+pub(crate) fn popover_separator() -> gtk::Separator {
     let sep = gtk::Separator::new(gtk::Orientation::Horizontal);
     sep.set_margin_top(4);
     sep.set_margin_bottom(4);
@@ -201,7 +224,7 @@ pub fn build(
     rows.append(&popover_separator());
 
     let suite = popover_button("The suite");
-    let shortcuts = popover_button("Keyboard shortcuts");
+    let shortcuts = menu_item("Keyboard shortcuts", Some("Ctrl+?"));
     let whats_new = popover_button("What's New");
     let changelog = popover_button("Changelog");
     let about = popover_button("About Porog");

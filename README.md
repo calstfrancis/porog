@@ -13,24 +13,27 @@ shows Sputnik's Now card. Ctrl+K searches the whole suite; see `PLAN.md`.
 |---|---|
 | Up / Down | Move between the rows |
 | Enter | Do what the focused row's button says (Resume or Open) |
+| N / W | The focused row's note, or its app's What's New |
 | Ctrl+K | Search the suite; Enter opens the first result |
 | Alt+1 … Alt+5 | The same, for Sputnik, Pereplyot, Kartoteka, Zerkalo, Skrizhal |
 
-Clicking an app's name always opens it plainly. The pencil beside a row's button leaves a one-line note
-for yourself that shows under that row until you clear it. Drop a PDF or EPUB on the window to read it in
+A row's button says *Resume* (a soft filled button) when it can reopen what you were last doing, and
+*Open* (an outlined one) when it opens the app. Clicking an app's name always opens it plainly. The ⋯
+beside the button holds the rest: *Open without resuming*, a one-line note for yourself that shows under
+that row until you clear it, and the app's What's New. Drop a PDF or EPUB on the window to read it in
 Pereplyot, or a `.typ` file to edit it in Zerkalo. The `details` word in the status bar shows the
 last three things per app. A button reads "Starting…" until its app is running.
 
 The menu (top right) has the System / Light / Dark theme choice, *The suite* (each app's version and what it answers), the changelog and About.
-The version number at the bottom right also opens the changelog. The theme choice is kept
-in `~/.config/porog/config.json`.
+The version number at the bottom right also opens the changelog: the release you have in full, earlier ones
+folded to one line each until opened. The theme choice is kept in `~/.config/porog/config.json`.
 
 ## From the tray and the command line
 
 *Show in system tray* in the menu (off by default) keeps an icon. A left click drops down a list: Show
 Porog, then each installed Fond app. Click an app's name to open it, or switch to it if it is already
-running; when it has something to resume, a line under it ("Resume — essay-2.typ") reopens that. Search… and
-Quit are at the bottom. While the icon is on, closing the window hides it and Porog keeps running. GNOME shows tray icons only with the AppIndicator extension.
+running; when it has something to resume, a line under it (`Resume “essay-2.typ”`, a long title cut at a
+word) reopens that. *Search the suite…* and *Quit Porog* are at the bottom. While the icon is on, closing the window hides it and Porog keeps running. GNOME shows tray icons only with the AppIndicator extension.
 
 ```sh
 porog --resume=zerkalo   # what the Zerkalo row's button says: Resume or Open

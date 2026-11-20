@@ -13,7 +13,7 @@ use porog_core::config::Config;
 
 use crate::VERSION;
 
-pub(crate) const RELEASE_NAME: &str = "Open Latch";
+pub(crate) const RELEASE_NAME: &str = "Quiet Lintel";
 
 /// Show the window if this version has not been seen: the welcome the first time ever,
 /// What's New after an update.
@@ -145,10 +145,20 @@ fn fill_apps(apps: &gtk::Box) {
 }
 
 /// Updated at release time, with `RELEASE_NAME`.
-const NEW: &[(&str, &str)] = &[(
-    "The tray icon is a list of your apps",
-    "With the tray icon on, a left click drops down each installed Fond app. Click a name to open it or switch to it; a line under it resumes what it was last doing.",
-)];
+const NEW: &[(&str, &str)] = &[
+    (
+        "A calmer window",
+        "The five rows sit on one card, and each row's pencil and What's New icons are now one quiet ⋯ menu that says in words what it does. Resume is a soft fill and Open an outline, so you can tell them apart by shape. Search is in the header.",
+    ),
+    (
+        "A changelog you can read",
+        "The release you have is open, with what changed in each section; earlier releases are one line each until you open them.",
+    ),
+    (
+        "A clearer tray menu",
+        "Resume lines read Resume “title”, long titles are cut at a word, and a title with an underscore no longer loses it.",
+    ),
+];
 
 const TRY: &[(&str, &str)] = &[
     (
@@ -161,6 +171,22 @@ const TRY: &[(&str, &str)] = &[
     ),
     ("Press Ctrl+K", "Search all five apps from here."),
 ];
+
+/// Escape closes a reading window, as it does every dialog.
+pub(crate) fn close_on_escape(window: &adw::Window) {
+    let keys = gtk::EventControllerKey::new();
+    keys.connect_key_pressed({
+        let window = window.clone();
+        move |_, key, _, _| {
+            if key == gtk::gdk::Key::Escape {
+                window.close();
+                return gtk::glib::Propagation::Stop;
+            }
+            gtk::glib::Propagation::Proceed
+        }
+    });
+    window.add_controller(keys);
+}
 
 pub(crate) fn section(text: &str) -> gtk::Label {
     let l = gtk::Label::new(Some(text));

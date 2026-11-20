@@ -1,7 +1,7 @@
 # Porog — Plan
 
-**Created:** 2026-11-10 · **Status:** Phases 1–6 built and released (0.1.0–0.4.0). Phases 7–14 written
-2026-11-17 and **not started**: wait for Cal to say "implement the plan".
+**Created:** 2026-11-10 · **Status:** Phases 1–14 built; released through 0.7.0. A calm redesign of the
+window, changelog and tray (§4, D15–D18) landed 2026-11-19, unreleased.
 
 Porog (порог, "threshold") is the way back into the Fond suite: Zerkalo, Pereplyot,
 Kartoteka, Sputnik and Skrizhal. Same conventions as the other plan files: **read a phase
@@ -46,21 +46,28 @@ Each change is checked against these. They are the same lenses as Zerkalo's
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ ≡                    [ Search the suite   Ctrl+K ]      │
+│            ( ⌕ Search the suite   Ctrl+K )           ≡  │
 ├─────────────────────────────────────────────────────────┤
-│ NOW  (from Sputnik)                                     │
-│ Read Soskice ch. 3 · THM 501 · about 40 min    [Start]  │
-│ 2 more today · 1 needs a decision                       │
+│ ╭─────────────────────────────────────────────────────╮ │
+│ │ ● NOW  FROM SPUTNIK                                 │ │
+│ │ Read Soskice ch. 3   [Start reading] (Open Sputnik) │ │
+│ │ THM 501 · about 40 min                              │ │
+│ │ 2 more today · 1 needs a decision                   │ │
+│ ╰─────────────────────────────────────────────────────╯ │
+│ ╭─────────────────────────────────────────────────────╮ │
+│ │ Sputnik    Week 10 · Fall 2026          ⋯  ( Open ) │ │
+│ │ Pereplyot  Soskice — Friendship · p. 47 ⋯  [Resume] │ │
+│ │ Kartoteka  412 references               ⋯  ( Open ) │ │
+│ │ Zerkalo    essay-2.typ · yesterday      ⋯  [Resume] │ │
+│ │ Skrizhal   3 CV entries                 ⋯  ( Open ) │ │
+│ ╰─────────────────────────────────────────────────────╯ │
 ├─────────────────────────────────────────────────────────┤
-│ Sputnik    Week 10 of Fall 2026               [Open]    │
-│ Pereplyot  Soskice — Friendship · p. 47       [Resume]  │
-│ Kartoteka  412 references                     [Open]    │
-│ Zerkalo    essay-2.typ · yesterday 16:40      [Resume]  │
-│ Skrizhal   CV elements                        [Open]    │
-├─────────────────────────────────────────────────────────┤
-│ details                                         v0.1.0  │
+│ details                                         v0.7.0  │
 └─────────────────────────────────────────────────────────┘
 ```
+
+`[Resume]` is a soft filled button, `( Open )` a hairline outline (D16). The redesign of
+2026-11-19 (§4, "Calm redesign") drew it this way.
 
 - The Now area keeps its height when Sputnik has nothing for today; it says so in one line
   ("Nothing placed on today.") rather than disappearing (P1).
@@ -423,6 +430,25 @@ No GNOME Shell search provider: Cal does not use Activities search (D13).
 - [x] Porog `CLAUDE.md`: `MIN_VERSIONS` and the contract examples in the release checklist.
 - Touches: fond-core, all five apps (tests only), Porog.
 
+### Calm redesign (2026-11-19, Cal: "redesign porog, the changelog, and the tray dropdown for beauty,
+simplicity, functionality, and calmness")
+- [x] Rows on one hairline card on the recessed ground (`fond-ground`), the Now card a matching card above,
+      both clamped to a reading width (680) and top-aligned; the window opens at 600×600.
+- [x] The pencil and the What's New icon on each row became one quiet ⋯ menu with labelled items and
+      their keys (D15). N and W still work on a focused row; the note is written in the same popover.
+- [x] Resume a soft fill, Open a hairline outline (D16). Button labels at normal weight, Resume semibold.
+- [x] Search moved into the header as a `fond-pill` reading "Search the suite  Ctrl+K"; below 440 px the
+      key hint hides and the Now card's buttons drop under its words (an `adw::Breakpoint`). The
+      window still fits 360 px.
+- [x] The Now card's eyebrow is a `fond-section` header with an ochre dot, the window's one colour.
+- [x] Changelog window: `porog_core::changelog` parses `CHANGELOG.md` (tested against the real file);
+      the newest release is open, earlier ones are folded `gtk::Expander`s (D17). An `[Unreleased]`
+      heading shows its title in the name's place.
+- [x] Tray: `Resume “title”`, titles cut at a word after 36 characters, `_` escaped (dbusmenu ate it as
+      an access key), *Search the suite…*, a tooltip (D18).
+- [ ] Not checked: the tray menu as GNOME's AppIndicator extension and KDE actually draw it (the
+      smoke test reads its layout over D-Bus only); Orca on the new row menu.
+
 ## 5. Decisions
 
 Settled 2026-11-10:
@@ -448,6 +474,15 @@ Settled 2026-11-17 (Plan II):
 | D12 | An app's What's New is asked for through an `<app>-whats-new` helper and shown in a Porog window, not by starting the app with a flag: it does not open a whole app to read a list, and works the same for apps with no What's New window. Chosen by Claude. |
 | D13 | No GNOME Shell search provider: Cal does not use Activities search. |
 | D14 | The out-of-scope list at the top of Plan II stays out of scope. |
+
+Settled 2026-11-19 (calm redesign, chosen by Claude at Cal's request):
+
+| | Decision |
+|---|---|
+| D15 | A row's secondary actions (open without resuming, the note, What's New) live in one ⋯ menu whose items say in words what they do, replacing the pencil and the What's New icon: ten unlabelled icons on five rows were the window's loudest thing. The ⋯ is the same on every row and never changes (P5). Supersedes the icon placement in Phases 6 and 10, not what they do. |
+| D16 | Resume and Open differ by shape (fill against outline), never by colour; the window has no accent colour, and the Now card's ochre dot is its only colour. |
+| D17 | The changelog opens on the newest release only; earlier releases are folded until asked for (P6). |
+| D18 | The tray menu stays plain text with no icons, bold or counts; titles are quoted and shortened so the menu stays narrow. |
 
 Open:
 

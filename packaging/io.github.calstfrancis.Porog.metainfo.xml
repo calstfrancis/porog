@@ -37,6 +37,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.7.0" date="2026-11-20">
+      <description>
+        <p>0.7.0 "Quiet Lintel" — a calmer window: the five rows sit on one card with a quiet ⋯ menu
+        each, Resume and Open differ by shape, search is in the header, the changelog is laid out
+        instead of shown as raw text, and the tray menu quotes titles and keeps their underscores.</p>
+      </description>
+    </release>
     <release version="0.6.0" date="2026-11-18">
       <description>
         <p>0.6.0 "Open Latch" — with the system tray icon on, a left click drops down each installed

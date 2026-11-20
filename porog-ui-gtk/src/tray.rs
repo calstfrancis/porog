@@ -1,10 +1,23 @@
 //! The system tray icon (StatusNotifierItem), off unless the user turns it on in the menu.
 //!
 //! The icon is Porog's own and never changes (`PLAN.md` P5). A left click drops the menu down
-//! (`item_is_menu`): Show Porog, then each installed app in row order — its name opens or
-//! switches to it, and a line under it resumes what it was last doing (P3) — then Search… and
-//! Quit. The tray
-//! runs on its own thread; its menu clicks come back to the GTK thread through
+//! (`item_is_menu`):
+//!
+//! ```text
+//! Show Porog
+//! ──────────
+//! Sputnik
+//! Pereplyot
+//!     Resume “An Example Reader”
+//! Zerkalo
+//! ──────────
+//! Search the suite…
+//! Quit Porog
+//! ```
+//!
+//! Each installed app in row order: its name opens or switches to it, and the line under it
+//! resumes what it was last doing (P3). Nothing in the menu is bold, coloured or counted. The
+//! tray runs on its own thread; its menu clicks come back to the GTK thread through
 //! [`set_handler`].
 
 use std::cell::RefCell;
@@ -55,12 +68,18 @@ pub struct Line {
     /// The app's row number, which is what a click sends back.
     pub index: usize,
     pub text: String,
-    /// "Resume — title", when the app has something to resume.
+    /// "Resume “title”", when the app has something to resume.
     pub resume: Option<String>,
 }
 
 struct PorogTray {
     lines: Vec<Line>,
+}
+
+/// `text` as a menu label shows it. The menu protocol reads a lone `_` as "underline the next
+/// letter", so a title like `essay_2.typ` would lose its underscore; doubling it keeps it.
+fn label(text: &str) -> String {
+    text.replace('_', "__")
 }
 
 impl ksni::Tray for PorogTray {
@@ -74,6 +93,14 @@ impl ksni::Tray for PorogTray {
 
     fn icon_name(&self) -> String {
         "io.github.calstfrancis.Porog".into()
+    }
+
+    fn tool_tip(&self) -> ksni::ToolTip {
+        ksni::ToolTip {
+            title: "Porog".into(),
+            description: "The way back into the Fond suite".into(),
+            ..Default::default()
+        }
     }
 
     /// A left click drops the menu down instead of calling `activate` (SNI `ItemIsMenu`).
@@ -99,7 +126,7 @@ impl ksni::Tray for PorogTray {
             let index = line.index;
             menu.push(
                 StandardItem {
-                    label: line.text.clone(),
+                    label: label(&line.text),
                     activate: Box::new(move |_: &mut Self| send(TrayCmd::Open(index))),
                     ..Default::default()
                 }
@@ -108,7 +135,7 @@ impl ksni::Tray for PorogTray {
             if let Some(resume) = &line.resume {
                 menu.push(
                     StandardItem {
-                        label: format!("    {resume}"),
+                        label: format!("    {}", label(resume)),
                         activate: Box::new(move |_: &mut Self| send(TrayCmd::Row(index))),
                         ..Default::default()
                     }
@@ -127,7 +154,7 @@ impl ksni::Tray for PorogTray {
             );
         }
         menu.push(MenuItem::Separator);
-        menu.push(item("Search…", true, || TrayCmd::Search));
+        menu.push(item("Search the suite…", true, || TrayCmd::Search));
         menu.push(item("Quit Porog", true, || TrayCmd::Quit));
         menu
     }
@@ -231,4 +258,15 @@ pub fn host_present() -> bool {
     .ok()
     .and_then(|reply| reply.get::<(bool,)>())
     .is_some_and(|(present,)| present)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn underscores_in_titles_survive_the_menu() {
+        assert_eq!(label("Resume “essay_2.typ”"), "Resume “essay__2.typ”");
+        assert_eq!(label("Zerkalo"), "Zerkalo");
+    }
 }

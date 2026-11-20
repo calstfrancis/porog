@@ -96,20 +96,44 @@ fn path_exists(path: &str, sandboxed: bool) -> bool {
         .unwrap_or(false)
 }
 
+/// The longest title the tray menu shows before cutting it with "…": a menu as wide as a
+/// long file name is hard to read at a glance.
+pub const TRAY_TITLE_MAX: usize = 36;
+
 /// One app's place in the tray menu: its name, which opens or switches to it, and, when the
-/// first resume entry can be reopened, a second line to resume it (`PLAN.md` P3: the same words
-/// the row's button uses). `None` for an app that is not installed — the tray lists only what
-/// can be opened.
+/// first resume entry can be reopened, a second line to resume it (`PLAN.md` P3: the verb the
+/// row's button uses, then what it reopens, in quotes). `None` for an app that is not
+/// installed — the tray lists only what can be opened.
 pub fn tray_entry(app: &App, state: &RowState) -> Option<(String, Option<String>)> {
     state.installed.then(|| {
         (
             app.name.to_string(),
-            state
-                .resume
-                .first()
-                .map(|first| format!("Resume — {}", first.title.trim())),
+            state.resume.first().map(|first| {
+                format!(
+                    "Resume \u{201c}{}\u{201d}",
+                    shorten(first.title.trim(), TRAY_TITLE_MAX)
+                )
+            }),
         )
     })
+}
+
+/// `text` cut to at most `max` characters, the last of them "…" when anything was cut. The
+/// cut falls between words where one is near enough, so no word is left half-shown.
+pub fn shorten(text: &str, max: usize) -> String {
+    if text.chars().count() <= max {
+        return text.to_string();
+    }
+    let kept: String = text.chars().take(max.saturating_sub(1)).collect();
+    let next_is_space = text
+        .chars()
+        .nth(kept.chars().count())
+        .is_some_and(char::is_whitespace);
+    let kept = match kept.rfind(char::is_whitespace) {
+        Some(space) if !next_is_space && space >= kept.len() / 2 => &kept[..space],
+        _ => kept.as_str(),
+    };
+    format!("{}…", kept.trim_end())
 }
 
 /// A moment with its UTC offset: what "today" and "yesterday" are measured from.
@@ -197,8 +221,17 @@ mod tests {
             tray_entry(app, &state),
             Some((
                 "Zerkalo".to_string(),
-                Some("Resume — essay-2.typ".to_string())
+                Some("Resume “essay-2.typ”".to_string())
             ))
+        );
+        state.resume = vec![entry(
+            "A Very Long Title For A Reading That Goes On And On",
+            &["/tmp/example/long.pdf"],
+        )];
+        let (_, resume) = tray_entry(app, &state).unwrap();
+        assert_eq!(
+            resume.as_deref(),
+            Some("Resume “A Very Long Title For A Reading…”")
         );
         state.installed = false;
         assert_eq!(tray_entry(app, &state), None);

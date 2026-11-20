@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.0] "Quiet Lintel" — 2026-11-20 — A calmer window
+
+### Changed
+- **One card, one quiet menu per row.** The five rows sit together on one card, and the pencil and What's New
+  icons beside each button are now a single ⋯ menu: *Open without resuming* (when the row says Resume), *Leave a
+  note…* (N), *Clear the note* and *What's new* (W), each saying in words what it does. The ⋯ stays faint until
+  the row is pointed at.
+- **Resume and Open look different.** Resume is a soft filled button and Open an outlined one, so a row with
+  somewhere to go back to can be told at a glance, by shape rather than colour. The Now card's own step
+  (*Start reading*, *Write essay*) wears the same fill as Resume.
+- **Search lives in the header.** A *Search the suite* box sits where the title was, with its Ctrl+K hint.
+- **The Now card is announced like every section in the suite** ("● NOW from Sputnik"); its ochre dot is the
+  window's one touch of colour. On a narrow window its buttons move under its words instead of squeezing them.
+- The Now card and rows keep a comfortable reading width on a wide window, and the window opens shorter.
+- **The changelog is laid out, not shown as raw text.** The release you have is open, with its name, date and
+  what changed in each section; earlier releases are one line each until you open them. Escape closes it.
+- **Clearer tray menu.** A resume line reads `Resume “title”`, and a long title is cut at a word; *Search…* is
+  now *Search the suite…*. Hovering the icon says what it is.
+
+### Fixed
+- A title with an underscore in it (`essay_2.typ`) lost the underscore in the tray menu, which treated it as a
+  keyboard hint.
+
 ## [0.6.0] "Open Latch" — 2026-11-18 — The tray icon is a list of your apps
 
 ### Changed

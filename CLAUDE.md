@@ -47,7 +47,9 @@ exists).
 ## Release machinery
 
 `RELEASE_NAME` is in `porog-ui-gtk/src/welcome.rs` beside the What's New list (`NEW`): bump both
-at release, with the CHANGELOG heading and the metainfo entry. `./release-preflight.sh` cross-checks
+at release, with the CHANGELOG heading and the metainfo entry. Unreleased work sits under
+`## [Unreleased] — Title`; at release that heading becomes `## [X.Y.Z] "Name" — DATE — Title`, the shape
+`porog_core::changelog` parses for the changelog window (its test reads the real file). `./release-preflight.sh` cross-checks
 all of it. `./capture-screenshots.sh` refreshes `screenshots/` from fictional status files and a fake
 `flatpak` (needs `cargo build --release`). `POROG_NO_WELCOME=1` hides the Welcome window.
 `fond-status` is a git dependency on `fond-core` (one rev, shared with every app that links `fond-core`

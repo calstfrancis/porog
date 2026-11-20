@@ -1,4 +1,4 @@
-# Porog v0.6.0 "Open Latch"
+# Porog v0.7.0 "Quiet Lintel"
 
 Install via Flatpak:
 
@@ -18,7 +18,11 @@ flatpak update io.github.calstfrancis.Porog
 
 ### What's new
 
-The tray icon is now a list of your apps. With *Show in system tray* on, a left click drops down each installed Fond app. Click a name to open it, or switch to it if it is already running; when an app has something to resume, a line under it ("Resume — essay-2.typ") reopens that. Apps that are not installed are no longer listed, and Search… and Quit stay at the bottom.
+A calmer window. The five rows now sit together on one card, and the pencil and What's New icons beside each button are a single quiet ⋯ menu whose items say in words what they do: open without resuming, leave or clear a note, see what's new. Resume is a soft filled button and Open an outlined one, so you can tell them apart by shape. Search sits in the header, and on a narrow window the Now card's buttons move under its words.
+
+The changelog is laid out instead of shown as raw text: the release you have is open, and earlier ones fold to a single line each.
+
+The tray menu reads Resume “title”, cuts long titles at a word, and no longer drops the underscore from a title like essay_2.typ.
 
 ### Full changelog
 

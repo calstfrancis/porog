@@ -1,4 +1,22 @@
 //! The main window: the Now area, the five fixed app rows and the status bar.
+//!
+//! ```text
+//! ┌──────────────────────────────────────────────────────┐
+//! │          ( ⌕ Search the suite   Ctrl+K )          ≡  │
+//! ├──────────────────────────────────────────────────────┤
+//! │ ╭──────────────────────────────────────────────────╮ │
+//! │ │ ● NOW  from Sputnik                              │ │
+//! │ │ Read Soskice ch. 3                 (Open Sputnik)│ │
+//! │ ╰──────────────────────────────────────────────────╯ │
+//! │ ╭──────────────────────────────────────────────────╮ │
+//! │ │ Sputnik    Week 10 · Fall 2026          ⋯ (Open) │ │
+//! │ │ Pereplyot  Soskice · p. 47              ⋯ Resume │ │
+//! │ │ …                                                │ │
+//! │ ╰──────────────────────────────────────────────────╯ │
+//! ├──────────────────────────────────────────────────────┤
+//! │ details                                       v0.6.0 │
+//! └──────────────────────────────────────────────────────┘
+//! ```
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -136,6 +154,29 @@ fn set_toggle(button: &gtk::Button, on: bool) {
     })]);
 }
 
+/// The search box's place in the header: a hairline pill that reads as a search field and opens
+/// the search window. Returns the pill and its "Ctrl+K" hint, which narrow windows hide.
+fn search_pill() -> (gtk::Button, gtk::Label) {
+    let key = gtk::Label::builder()
+        .label("Ctrl+K")
+        .margin_start(10)
+        .css_classes(["caption", "dim-label"])
+        .build();
+    let line = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    line.append(&gtk::Image::from_icon_name("system-search-symbolic"));
+    line.append(&gtk::Label::new(Some("Search the suite")));
+    line.append(&key);
+    let pill = gtk::Button::builder()
+        .child(&line)
+        .valign(gtk::Align::Center)
+        .tooltip_text("Search all five apps (Ctrl+K)")
+        .action_name("win.search")
+        .css_classes(["fond-pill", "porog-search-pill"])
+        .build();
+    pill.update_property(&[gtk::accessible::Property::Label("Search the suite")]);
+    (pill, key)
+}
+
 pub fn build(app: &adw::Application) {
     let config_path = glib::user_config_dir().join("porog").join("config.json");
     let config = Rc::new(RefCell::new(Config::load(&config_path)));
@@ -149,8 +190,8 @@ pub fn build(app: &adw::Application) {
     let list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::None)
         .activate_on_single_click(false)
-        .vexpand(true)
-        .css_classes(["fond-list", "porog-rows"])
+        .valign(gtk::Align::Start)
+        .css_classes(["porog-card", "porog-rows"])
         .build();
     let rows: Rc<Vec<AppRow>> = Rc::new(
         APPS.iter()
@@ -218,18 +259,30 @@ pub fn build(app: &adw::Application) {
         .css_classes(["flat", "caption", "fond-quiet"])
         .build();
     let status = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-    status.add_css_class("fond-statusbar");
-    status.add_css_class("fond-edge-top");
+    for class in ["fond-statusbar", "fond-chrome", "fond-edge-top"] {
+        status.add_css_class(class);
+    }
     status.append(&details_toggle);
     status.append(&version);
 
+    // The Now card and the rows sit together at a reading width, top-aligned, so a wide or
+    // tall window adds margin around them rather than stretching them.
+    let board = gtk::Box::new(gtk::Orientation::Vertical, 12);
+    board.add_css_class("porog-board");
+    board.append(&now_card);
+    board.append(&list);
+    let clamp = adw::Clamp::builder()
+        .maximum_size(680)
+        .tightening_threshold(560)
+        .child(&board)
+        .build();
     let scroll = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
         .vexpand(true)
-        .child(&list)
+        .child(&clamp)
         .build();
     let body = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    body.append(&now_card);
+    body.add_css_class("fond-ground");
     body.append(&scroll);
     body.append(&status);
     toasts.set_child(Some(&body));
@@ -238,15 +291,11 @@ pub fn build(app: &adw::Application) {
         .icon_name("open-menu-symbolic")
         .tooltip_text("Menu")
         .build();
+    let (search_pill, search_key) = search_pill();
     let header = adw::HeaderBar::new();
+    header.add_css_class("fond-chrome");
+    header.set_title_widget(Some(&search_pill));
     header.pack_end(&menu_button);
-    header.pack_start(
-        &gtk::Button::builder()
-            .icon_name("system-search-symbolic")
-            .tooltip_text("Search the suite (Ctrl+K)")
-            .action_name("win.search")
-            .build(),
-    );
 
     let drop = gtk::DropTarget::new(
         gtk::gdk::FileList::static_type(),
@@ -271,10 +320,27 @@ pub fn build(app: &adw::Application) {
     let window = adw::ApplicationWindow::builder()
         .application(app)
         .title("Porog")
-        .default_width(620)
-        .default_height(680)
+        .default_width(600)
+        .default_height(600)
         .content(&view)
         .build();
+    // Below 440 px the pill drops its key hint, so it still fits beside the window buttons,
+    // and the Now card's buttons go under its words instead of squeezing them.
+    if let Ok(narrow) = adw::BreakpointCondition::parse("max-width: 440sp") {
+        let breakpoint = adw::Breakpoint::new(narrow);
+        breakpoint.add_setter(&search_key, "visible", Some(&false.to_value()));
+        breakpoint.add_setter(
+            &now_area.layout,
+            "orientation",
+            Some(&gtk::Orientation::Vertical.to_value()),
+        );
+        breakpoint.add_setter(
+            &now_area.buttons,
+            "halign",
+            Some(&gtk::Align::Start.to_value()),
+        );
+        window.add_breakpoint(breakpoint);
+    }
     menu_button.set_popover(Some(&menu::build(
         &window,
         &toasts,

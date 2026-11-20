@@ -28,10 +28,53 @@ const APP_ID: &str = "io.github.calstfrancis.Porog";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const FOND_CSS: &str = include_str!("../style/fond.css");
 const GLOBAL_CSS: &str = "
-.porog-rows { margin: 12px; }
-.porog-rows row.fond-row > box { padding-left: 4px; padding-right: 8px; }
-.porog-name { padding-left: 8px; padding-right: 0; }
+/* The board: the Now card and the rows, each a hairline card on the recessed ground. */
+.porog-board { margin: 14px 14px 18px 14px; }
+.porog-card {
+  background: @card_bg_color;
+  border: 1px solid alpha(@borders, 0.55);
+  border-radius: 12px;
+}
+.porog-now { padding: 12px 16px 12px 16px; }
+.porog-board list.porog-rows { background: @card_bg_color; }
+.porog-rows > row { border-radius: 0; }
+.porog-rows > row:not(:last-child) { border-bottom: 1px solid alpha(@borders, 0.35); }
+.porog-rows > row:first-child { border-top-left-radius: 11px; border-top-right-radius: 11px; }
+.porog-rows > row:last-child { border-bottom-left-radius: 11px; border-bottom-right-radius: 11px; }
+.porog-rows row.fond-row > box { padding: 9px 10px 9px 4px; }
+.porog-name { padding-left: 10px; padding-right: 4px; }
 .porog-note { font-style: italic; }
+.porog-ochre { color: @fond_hl_ochre; }
+
+/* Resume is a soft fill, Open a hairline: told apart by shape, never by colour. */
+button.porog-act { min-height: 30px; padding: 0 14px; border-radius: 9999px; }
+button.porog-act label { font-weight: 400; }
+button.porog-open { background: transparent; box-shadow: inset 0 0 0 1px alpha(@borders, 0.9); }
+button.porog-open:hover { background: alpha(@window_fg_color, 0.05); }
+button.porog-open:active { background: alpha(@window_fg_color, 0.10); }
+button.porog-resume { background: alpha(@window_fg_color, 0.09); box-shadow: none; }
+button.porog-resume label { font-weight: 600; }
+button.porog-resume:hover { background: alpha(@window_fg_color, 0.13); }
+button.porog-resume:active { background: alpha(@window_fg_color, 0.17); }
+button.porog-act-quiet label { font-weight: 400; }
+
+/* The row menu's ⋯ is there on every row, but quiet until the row is pointed at. */
+.porog-more { opacity: 0.45; }
+row:hover .porog-more { opacity: 0.8; }
+.porog-more:hover, .porog-more:focus-within, .porog-more:checked { opacity: 1; }
+button.porog-menu-item { min-height: 30px; padding: 0 10px; }
+button.porog-menu-item label { font-weight: 400; }
+popover.porog-row-menu > contents { padding: 6px; }
+
+headerbar button.porog-search-pill { min-height: 30px; padding: 0 16px; }
+headerbar button.porog-search-pill label { font-size: 0.92em; }
+headerbar button.porog-search-pill image { opacity: 0.6; }
+
+/* The changelog. */
+.porog-headline { font-weight: 600; }
+.porog-detail { opacity: 0.75; }
+.porog-earlier > expander-widget { border-top: 1px solid alpha(@borders, 0.35); }
+.porog-earlier > expander-widget:last-child { border-bottom: 1px solid alpha(@borders, 0.35); }
 ";
 
 fn main() -> glib::ExitCode {
